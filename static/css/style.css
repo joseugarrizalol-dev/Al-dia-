@@ -491,3 +491,50 @@ header {
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
+
+/* ── Mobile responsive (≤ 768px) ────────────────────────── */
+@media (max-width: 768px) {
+  html, body {
+    overflow: auto;
+    height: auto;
+  }
+
+  /* Header: hide ticker, keep logo + buttons */
+  .hd-ticker { display: none; }
+  header { gap: 8px; padding: 0 12px; }
+  .logo-sub { display: none; }
+
+  /* Market bar: horizontal scroll */
+  .mkt-bar {
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+  .mkt-bar::-webkit-scrollbar { display: none; }
+
+  /* Grid: single column, auto height, scrollable */
+  .grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+    height: auto;
+    overflow: visible;
+    padding: 8px;
+    gap: 8px;
+  }
+
+  /* News card: no longer spans rows */
+  .card--tall {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  /* Card bodies: constrained height with scroll */
+  .card-body  { max-height: 280px; overflow-y: auto; }
+  .news-feed  { max-height: 380px; }
+
+  /* Summary box: slightly tighter */
+  .summary-box { padding: 10px 12px; }
+
+  /* Slightly tighter news filter */
+  .news-filter { padding: 0 10px 6px; }
+}
