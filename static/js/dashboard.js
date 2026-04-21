@@ -340,6 +340,6 @@ if(document.getElementById('rates-list')){
     await refreshAll();
     loadSummary();
     setInterval(loadNews,3*60*1000);
-    setInterval(refreshAll,5*60*1000);
+    setInterval(()=>{loadRates();loadCrypto();loadCommodities();loadUSMarkets();loadEconomic();},60*1000);
   })();
 }
