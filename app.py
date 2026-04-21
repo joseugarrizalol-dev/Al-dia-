@@ -100,38 +100,46 @@ def api_summary():
 
 @app.route("/sentinel/api/news")
 def sentinel_api_news():
-    if not _SENTINEL_DB.exists():
+    try:
+        if not _SENTINEL_DB.exists():
+            return jsonify({"results": [], "total": 0})
+        conn = _snt_conn()
+        rows = conn.execute("""
+            SELECT id, title, url, outlet, scraped_at,
+                   score_total, score_factual, score_linguistic, score_context,
+                   score_framing, score_transparency,
+                   hecho, intensidad, carga_emocional, verbos,
+                   encuadre, encuadre_just, score_just
+            FROM articles WHERE analyzed = 1 AND DATE(scraped_at) = DATE('now')
+            ORDER BY scraped_at DESC
+        """).fetchall()
+        conn.close()
+        return jsonify({"results": [dict(r) for r in rows], "total": len(rows)})
+    except Exception as e:
+        print(f"[sentinel/api/news] error: {e}")
         return jsonify({"results": [], "total": 0})
-    conn = _snt_conn()
-    rows = conn.execute("""
-        SELECT id, title, url, outlet, scraped_at,
-               score_total, score_factual, score_linguistic, score_context,
-               score_framing, score_transparency,
-               hecho, intensidad, carga_emocional, verbos,
-               encuadre, encuadre_just, score_just
-        FROM articles WHERE analyzed = 1 AND DATE(scraped_at) = DATE('now')
-        ORDER BY scraped_at DESC
-    """).fetchall()
-    conn.close()
-    return jsonify({"results": [dict(r) for r in rows], "total": len(rows)})
 
 @app.route("/sentinel/api/stats")
 def sentinel_api_stats():
-    if not _SENTINEL_DB.exists():
+    try:
+        if not _SENTINEL_DB.exists():
+            return jsonify({"total": 0, "analyzed": 0, "avg_score": None, "outlets": []})
+        conn = _snt_conn()
+        total    = conn.execute("SELECT COUNT(*) FROM articles WHERE DATE(scraped_at) = DATE('now')").fetchone()[0]
+        analyzed = conn.execute("SELECT COUNT(*) FROM articles WHERE analyzed=1 AND DATE(scraped_at) = DATE('now')").fetchone()[0]
+        avg      = conn.execute("SELECT ROUND(AVG(score_total),1) FROM articles WHERE analyzed=1 AND DATE(scraped_at) = DATE('now')").fetchone()[0]
+        outlets  = conn.execute("""
+            SELECT outlet, COUNT(*) AS total,
+                   ROUND(AVG(score_total),1) AS avg_score
+            FROM articles WHERE analyzed=1 AND DATE(scraped_at) = DATE('now')
+            GROUP BY outlet ORDER BY avg_score DESC
+        """).fetchall()
+        conn.close()
+        return jsonify({"total": total, "analyzed": analyzed, "avg_score": avg,
+                        "outlets": [dict(r) for r in outlets]})
+    except Exception as e:
+        print(f"[sentinel/api/stats] error: {e}")
         return jsonify({"total": 0, "analyzed": 0, "avg_score": None, "outlets": []})
-    conn = _snt_conn()
-    total    = conn.execute("SELECT COUNT(*) FROM articles WHERE DATE(scraped_at) = DATE('now')").fetchone()[0]
-    analyzed = conn.execute("SELECT COUNT(*) FROM articles WHERE analyzed=1 AND DATE(scraped_at) = DATE('now')").fetchone()[0]
-    avg      = conn.execute("SELECT ROUND(AVG(score_total),1) FROM articles WHERE analyzed=1 AND DATE(scraped_at) = DATE('now')").fetchone()[0]
-    outlets  = conn.execute("""
-        SELECT outlet, COUNT(*) AS total,
-               ROUND(AVG(score_total),1) AS avg_score
-        FROM articles WHERE analyzed=1 AND DATE(scraped_at) = DATE('now')
-        GROUP BY outlet ORDER BY avg_score DESC
-    """).fetchall()
-    conn.close()
-    return jsonify({"total": total, "analyzed": analyzed, "avg_score": avg,
-                    "outlets": [dict(r) for r in outlets]})
 
 if __name__ == "__main__":
     print("AL DÍA — http://localhost:5000")

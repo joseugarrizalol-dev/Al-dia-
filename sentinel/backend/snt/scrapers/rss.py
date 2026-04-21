@@ -10,7 +10,7 @@ from urllib.parse import urljoin, urlparse
 from datetime import datetime, timezone
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from snt.db.database import get_connection
+from snt.db.database import get_connection, init_db
 from snt.scrapers.outlets import OUTLETS_RSS, OUTLETS_HTML, is_relevant
 
 
@@ -196,6 +196,7 @@ def run_scraper() -> dict:
     Fetch all outlets in parallel and persist results.
     Returns {"inserted": n, "skipped": n, "outlets_fetched": [...]}
     """
+    init_db()
     deleted = _cleanup_old_articles()
     tasks: list[tuple[str, list[str], str]] = []
     for outlet, urls in OUTLETS_RSS.items():
