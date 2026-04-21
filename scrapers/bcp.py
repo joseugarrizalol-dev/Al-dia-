@@ -1,6 +1,7 @@
 import re
 import requests
 from bs4 import BeautifulSoup
+from scrapers import _cache
 
 URL = "https://www.maxicambios.com.py"
 HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
@@ -99,6 +100,10 @@ def _via_text(html: str) -> dict:
 
 
 def get_rates() -> dict:
+    cached = _cache.get("rates")
+    if cached is not None:
+        return cached
+
     try:
         res = requests.get(URL, headers=HEADERS, timeout=10)
         res.raise_for_status()
@@ -114,7 +119,9 @@ def get_rates() -> dict:
             if k not in rates:
                 rates[k] = v
 
-        return rates if rates else DEMO_RATES
+        final = rates if rates else DEMO_RATES
+        _cache.set("rates", final, 120)
+        return final
 
     except Exception:
         return DEMO_RATES

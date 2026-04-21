@@ -1,5 +1,6 @@
 import yfinance as yf
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from scrapers import _cache
 
 # ── Symbol definitions ────────────────────────────────────
 
@@ -25,6 +26,8 @@ INDEXES = {
     "^IXIC": {"label": "Nasdaq",    "flag": "💻"},
     "^DJI":  {"label": "Dow Jones", "flag": "📈"},
     "^VIX":  {"label": "VIX",       "flag": "⚡"},
+    "^MERV": {"label": "Merval",    "flag": "🇦🇷"},
+    "^RUT":  {"label": "Russell 2000", "flag": "📊"},
 }
 
 DEMO_COMMODITIES = {
@@ -45,10 +48,12 @@ DEMO_TREASURIES = {
 }
 
 DEMO_INDEXES = {
-    "^GSPC": {"label":"S&P 500",   "flag":"🇺🇸", "price":5240.0,  "change":"+0.55%"},
-    "^IXIC": {"label":"Nasdaq",    "flag":"💻",  "price":16430.0, "change":"+0.80%"},
-    "^DJI":  {"label":"Dow Jones", "flag":"📈",  "price":38950.0, "change":"+0.30%"},
-    "^VIX":  {"label":"VIX",       "flag":"⚡",  "price":14.2,    "change":"-3.10%"},
+    "^GSPC": {"label":"S&P 500",      "flag":"🇺🇸", "price":5240.0,   "change":"+0.55%"},
+    "^IXIC": {"label":"Nasdaq",       "flag":"💻",  "price":16430.0,  "change":"+0.80%"},
+    "^DJI":  {"label":"Dow Jones",    "flag":"📈",  "price":38950.0,  "change":"+0.30%"},
+    "^VIX":  {"label":"VIX",          "flag":"⚡",  "price":14.2,     "change":"-3.10%"},
+    "^MERV": {"label":"Merval",       "flag":"🇦🇷", "price":1950000.0,"change":"+1.20%"},
+    "^RUT":  {"label":"Russell 2000", "flag":"📊",  "price":2050.0,   "change":"+0.40%"},
 }
 
 
@@ -82,18 +87,26 @@ def _fetch_batch(symbols_meta: dict) -> dict:
 
 
 def get_commodities() -> dict:
+    cached = _cache.get("commodities")
+    if cached is not None:
+        return cached
+
     data = _fetch_batch(COMMODITIES)
     if not data:
         return DEMO_COMMODITIES
-    # Fill missing with demo
     for k, v in DEMO_COMMODITIES.items():
         if k not in data:
             data[k] = v
-    return {k: data[k] for k in COMMODITIES if k in data}
+    result = {k: data[k] for k in COMMODITIES if k in data}
+    _cache.set("commodities", result, 120)
+    return result
 
 
 def get_us_markets() -> dict:
-    # Fetch treasuries + indexes in parallel
+    cached = _cache.get("us_markets")
+    if cached is not None:
+        return cached
+
     all_meta = {**TREASURIES, **INDEXES}
     data = _fetch_batch(all_meta)
 
@@ -105,10 +118,10 @@ def get_us_markets() -> dict:
     for k in INDEXES:
         indexes[k] = data.get(k, DEMO_INDEXES.get(k))
 
-    # Try NY Fed EFFR for Fed Funds Rate
     effr = _get_effr()
-
-    return {"treasuries": treasuries, "indexes": indexes, "effr": effr}
+    result = {"treasuries": treasuries, "indexes": indexes, "effr": effr}
+    _cache.set("us_markets", result, 120)
+    return result
 
 
 def _get_effr() -> dict:

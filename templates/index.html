@@ -6,7 +6,18 @@
   <title>Al Día — Mercados Paraguay</title>
   <link rel="stylesheet" href="/static/css/style.css" />
 </head>
-<body>
+<body class="dashboard-page">
+
+<!-- ── WELCOME OVERLAY ── -->
+<div class="welcome-overlay" id="welcome-overlay">
+  <div class="welcome-box">
+    <span class="logo-text" style="font-size:1.1rem">AL DÍA</span>
+    <p class="welcome-sub">Nombre o nombre de organización</p>
+    <input class="welcome-input" id="welcome-input" type="text"
+           placeholder="Tu nombre o empresa" maxlength="32" autocomplete="off" />
+    <button class="welcome-btn" id="welcome-btn" disabled>Ingresar</button>
+  </div>
+</div>
 
 <!-- ── HEADER ── -->
 <header>
@@ -14,7 +25,10 @@
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
     <span class="logo-text">AL DÍA</span>
     <span class="logo-sep"></span>
-    <span class="logo-sub">Mercados Paraguay</span>
+    <nav class="hd-nav">
+      <a href="/" class="hd-nav-link hd-nav-link--active">Mercados</a>
+      <a href="/sentinel" class="hd-nav-link">Sentinel</a>
+    </nav>
   </div>
 
   <div class="hd-ticker">
@@ -41,19 +55,11 @@
   </div>
 
   <div class="hd-right">
-    <span id="last-updated"></span>
-    <button class="btn-refresh" onclick="refreshAll()">
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-      Actualizar
-    </button>
-    <button class="btn-icon" onclick="toggleTheme()" aria-label="Tema">
+<button class="btn-icon" onclick="toggleTheme()" aria-label="Tema">
       <svg id="theme-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
     </button>
   </div>
 </header>
-
-<!-- ── MARKET STATUS BAR ── -->
-<div class="mkt-bar" id="mkt-bar"></div>
 
 <!-- ── GRID ── -->
 <div class="grid">
@@ -61,7 +67,6 @@
   <!-- Divisas -->
   <div class="card" id="c-divisas">
     <div class="card-hd">
-      <span class="card-icon">💱</span>
       <span class="card-title">Tipo de Cambio</span>
       <span class="card-src">Maxicambios</span>
     </div>
@@ -73,7 +78,6 @@
   <!-- Cripto -->
   <div class="card" id="c-cripto">
     <div class="card-hd">
-      <span class="card-icon">₿</span>
       <span class="card-title">Criptomonedas</span>
       <span class="card-src">CoinGecko</span>
     </div>
@@ -85,7 +89,6 @@
   <!-- Tasas USA -->
   <div class="card" id="c-tasas">
     <div class="card-hd">
-      <span class="card-icon">🏦</span>
       <span class="card-title">Tasas USA</span>
       <span class="card-src">NY Fed · Yahoo</span>
     </div>
@@ -96,34 +99,37 @@
 
   <!-- Resumen + Noticias -->
   <div class="card card--tall" id="c-noticias">
-    <div class="card-hd">
-      <span class="card-icon">📋</span>
-      <span class="card-title">Resumen del Día</span>
-      <span class="card-src">Análisis automático</span>
-      <button class="btn-regen" id="summary-btn" onclick="refreshSummary()" title="Regenerar">↻</button>
-    </div>
-    <div class="summary-box">
-      <p id="summary-text">Cargando resumen...</p>
-      <span id="summary-date" class="summary-date"></span>
+
+    <div class="card-half">
+      <div class="card-hd">
+        <span class="card-title"><span id="hd-greeting"></span></span>
+        <span class="card-src">Análisis automático</span>
+        <button class="btn-regen" id="summary-btn" onclick="refreshSummary()" title="Regenerar">↻</button>
+      </div>
+      <div class="summary-box">
+        <ul id="summary-text"><li>Cargando resumen...</li></ul>
+        <span id="summary-date" class="summary-date"></span>
+      </div>
     </div>
 
     <div class="card-divider"></div>
 
-    <div class="card-hd card-hd--inner">
-      <span class="card-icon">📰</span>
-      <span class="card-title">Noticias</span>
-      <span class="card-src">Política · Economía · Finanzas</span>
+    <div class="card-half">
+      <div class="card-hd card-hd--inner">
+        <span class="card-title"><span class="live-dot"></span>Ciclo de Noticias en Vivo</span>
+        <span class="card-src">Política · Economía · Finanzas</span>
+      </div>
+      <div class="news-filter" id="news-filter"></div>
+      <div class="news-feed" id="news-feed">
+        <div class="sk"></div><div class="sk"></div><div class="sk"></div><div class="sk"></div>
+      </div>
     </div>
-    <div class="news-filter" id="news-filter"></div>
-    <div class="news-feed" id="news-feed">
-      <div class="sk"></div><div class="sk"></div><div class="sk"></div><div class="sk"></div>
-    </div>
+
   </div>
 
   <!-- Macro Paraguay -->
   <div class="card" id="c-macro">
     <div class="card-hd">
-      <span class="card-icon">🇵🇾</span>
       <span class="card-title">Macro Paraguay</span>
       <span class="card-src">BCP · FMI · S&amp;P · Moody's</span>
     </div>
@@ -135,7 +141,6 @@
   <!-- Commodities -->
   <div class="card" id="c-commodities">
     <div class="card-hd">
-      <span class="card-icon">🌾</span>
       <span class="card-title">Commodities</span>
       <span class="card-src">Yahoo Finance</span>
     </div>
@@ -148,8 +153,7 @@
   <!-- Índices USA -->
   <div class="card" id="c-indices">
     <div class="card-hd">
-      <span class="card-icon">📈</span>
-      <span class="card-title">Índices USA</span>
+      <span class="card-title">Índices</span>
       <span class="card-src">Yahoo Finance</span>
     </div>
     <div class="card-body" id="indexes-list">
@@ -158,6 +162,9 @@
   </div>
 
 </div><!-- /grid -->
+
+<!-- ── MARKET STATUS BAR ── -->
+<div class="mkt-bar" id="mkt-bar"></div>
 
 <script src="/static/js/dashboard.js"></script>
 </body>

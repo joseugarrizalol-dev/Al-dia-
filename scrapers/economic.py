@@ -1,4 +1,6 @@
 import requests
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from scrapers import _cache
 
 # ── Static data (BCP policy rates, ratings — change infrequently) ──────────
 STATIC = {
@@ -24,7 +26,7 @@ def _imf_latest(indicator: str, country: str = "PRY", prefer_year: int = 2025) -
     """Return (value_str, year_str) for the closest available year."""
     try:
         url = f"{IMF_BASE}/{indicator}/{country}"
-        r = requests.get(url, timeout=10, headers={"Accept": "application/json"})
+        r = requests.get(url, timeout=6, headers={"Accept": "application/json"})
         data = r.json()
         series: dict = data["values"][indicator][country]
         # Try preferred year, then fall back to nearest available
@@ -44,37 +46,30 @@ def _fmt(n: float) -> str:
 
 
 def get_economic() -> dict:
+    cached = _cache.get("economic")
+    if cached is not None:
+        return cached
+
+    indicators = [
+        ("NGDP_RPCH", 2025, "pib_crec",  "Crec. PIB",  "%",     "pib_crec"),
+        ("NGDPD",     2025, "pib_nom",   "PIB nominal", "B USD", "pib_nom"),
+        ("PCPIPCH",   2025, "inflacion", "Inflación",   "%",     "inflacion"),
+        ("LUR",       2026, "desempleo", "Desempleo",   "%",     "desempleo"),
+    ]
+
+    def _fetch(ind, yr, key, label, unit, demo_key):
+        val, actual_yr = _imf_latest(ind, prefer_year=yr)
+        if val is not None:
+            return key, {"label": label, "value": _fmt(val), "unit": unit, "year": f"FMI {actual_yr}"}
+        return key, DEMO_IMF[demo_key]
+
     result = {}
+    with ThreadPoolExecutor(max_workers=4) as ex:
+        futures = [ex.submit(_fetch, *args) for args in indicators]
+        for f in as_completed(futures):
+            key, data = f.result()
+            result[key] = data
 
-    # PIB crecimiento real 2025
-    val, yr = _imf_latest("NGDP_RPCH", prefer_year=2025)
-    if val is not None:
-        result["pib_crec"] = {"label": "Crec. PIB", "value": _fmt(val), "unit": "%", "year": f"FMI {yr}"}
-    else:
-        result["pib_crec"] = DEMO_IMF["pib_crec"]
-
-    # PIB nominal en USD (miles de millones)
-    val, yr = _imf_latest("NGDPD", prefer_year=2025)
-    if val is not None:
-        result["pib_nom"] = {"label": "PIB nominal", "value": _fmt(val), "unit": "B USD", "year": f"FMI {yr}"}
-    else:
-        result["pib_nom"] = DEMO_IMF["pib_nom"]
-
-    # Inflación proyectada
-    val, yr = _imf_latest("PCPIPCH", prefer_year=2025)
-    if val is not None:
-        result["inflacion"] = {"label": "Inflación", "value": _fmt(val), "unit": "%", "year": f"FMI {yr}"}
-    else:
-        result["inflacion"] = DEMO_IMF["inflacion"]
-
-    # Desempleo proyectado
-    val, yr = _imf_latest("LUR", prefer_year=2026)
-    if val is not None:
-        result["desempleo"] = {"label": "Desempleo", "value": _fmt(val), "unit": "%", "year": f"FMI {yr}"}
-    else:
-        result["desempleo"] = DEMO_IMF["desempleo"]
-
-    # Merge static indicators
     result.update(STATIC)
-
+    _cache.set("economic", result, 3600)
     return result

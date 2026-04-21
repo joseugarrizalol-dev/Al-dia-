@@ -1,3 +1,40 @@
+// ── User name & greeting ──────────────────────────────────
+(function(){
+  const KEY="ald_username";
+  const overlay=document.getElementById("welcome-overlay");
+  const input=document.getElementById("welcome-input");
+  const btn=document.getElementById("welcome-btn");
+  const greetEl=document.getElementById("hd-greeting");
+  const DIAS=["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
+  const MESES=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+  let _name="";
+  function pad(n){return String(n).padStart(2,"0");}
+  function buildGreeting(){
+    const now=new Date(new Date().toLocaleString("en-US",{timeZone:"America/Asuncion"}));
+    const dia=DIAS[now.getDay()],d=now.getDate(),mes=MESES[now.getMonth()];
+    const t=`${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+    return `Bienvenido, ${_name} · ${dia} ${d} ${mes} · ${t}`;
+  }
+  function startClock(){
+    if(!greetEl||!_name)return;
+    greetEl.textContent=buildGreeting();
+    setInterval(()=>{if(greetEl&&_name)greetEl.textContent=buildGreeting();},1000);
+  }
+  function enter(name){
+    _name=name;
+    localStorage.setItem(KEY,name);
+    if(overlay)overlay.classList.add("hidden");
+    startClock();
+  }
+  const saved=localStorage.getItem(KEY);
+  if(saved){_name=saved;if(overlay)overlay.classList.add("hidden");startClock();}
+  if(input){
+    input.addEventListener("input",()=>btn.disabled=!input.value.trim());
+    input.addEventListener("keydown",e=>{if(e.key==="Enter"&&input.value.trim())enter(input.value.trim());});
+  }
+  if(btn)btn.addEventListener("click",()=>{if(input&&input.value.trim())enter(input.value.trim());});
+})();
+
 // ── Theme ─────────────────────────────────────────────────
 const MOON=`<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>`;
 const SUN=`<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>`;
@@ -11,13 +48,13 @@ function chgBg(s){const c=chgClass(s);return c==="up"?"chg-up":c==="down"?"chg-d
 function outletCls(o){const l=o.toLowerCase();if(l.includes("abc"))return"o-abc";if(l.includes("ltima")||l.includes("hora"))return"o-uh";if(l.includes("naci"))return"o-ln";if(l.includes("hoy"))return"o-hoy";return"o-other"}
 
 // ── Data row builder ──────────────────────────────────────
-function row({icon="",code,name="",val,chg="",unit="",noChg=false}){
+function row({icon="",code,name="",val,chg="",unit="",noChg=false,wrapName=false}){
   const chgHtml=noChg?"":(`<span class="dr-chg ${chgBg(chg)}">${chg&&chg!=="—"?chg:"—"}</span>`);
   return `<div class="dr${noChg?" dr--no-chg":""}">
     <span class="dr-icon">${icon}</span>
     <div class="dr-info">
       <span class="dr-code">${code}</span>
-      <span class="dr-name">${name}</span>
+      <span class="dr-name${wrapName?" dr-name--wrap":""}">${name}</span>
     </div>
     <span class="dr-val">${val}${unit?`<span class="dr-unit">${unit}</span>`:""}</span>
     ${chgHtml}
@@ -26,11 +63,12 @@ function row({icon="",code,name="",val,chg="",unit="",noChg=false}){
 
 // ── Market clocks ─────────────────────────────────────────
 const MARKETS=[
-  {id:"nyc", flag:"🇺🇸", name:"Nueva York", tz:"America/New_York",  open:[9,30],  close:[16,0]},
-  {id:"lon", flag:"🇬🇧", name:"Londres",    tz:"Europe/London",      open:[8,0],   close:[16,30]},
-  {id:"ffm", flag:"🇩🇪", name:"Fráncfort",  tz:"Europe/Berlin",      open:[9,0],   close:[17,30]},
-  {id:"tyo", flag:"🇯🇵", name:"Tokio",      tz:"Asia/Tokyo",         open:[9,0],   close:[15,0]},
-  {id:"hkg", flag:"🇭🇰", name:"Hong Kong",  tz:"Asia/Hong_Kong",     open:[9,30],  close:[16,0]},
+  {id:"asu", flag:"🇵🇾", name:"Asunción",   tz:"America/Asuncion",   open:[9,0],   close:[17,0]},
+  {id:"nyc", flag:"🇺🇸", name:"Nueva York", tz:"America/New_York",   open:[9,30],  close:[16,0]},
+  {id:"lon", flag:"🇬🇧", name:"Londres",    tz:"Europe/London",       open:[8,0],   close:[16,30]},
+  {id:"ffm", flag:"🇩🇪", name:"Fráncfort",  tz:"Europe/Berlin",       open:[9,0],   close:[17,30]},
+  {id:"tyo", flag:"🇯🇵", name:"Tokio",      tz:"Asia/Tokyo",          open:[9,0],   close:[15,0]},
+  {id:"hkg", flag:"🇭🇰", name:"Hong Kong",  tz:"Asia/Hong_Kong",      open:[9,30],  close:[16,0]},
 ];
 
 function _isOpen(tz,oh,om,ch,cm){
@@ -72,20 +110,31 @@ function _tickMarkets(){
   });
 }
 
-_buildMarketBar();
-setInterval(_tickMarkets,1000);
+if(document.getElementById('mkt-bar')){_buildMarketBar();setInterval(_tickMarkets,1000);}
 
 // ── Ticker helper ─────────────────────────────────────────
 function setT(ids,val,cls=""){ids.forEach(id=>{const el=document.getElementById(id);if(el){el.textContent=val;el.className="tv "+(cls||"")}})}
 
 // ── Exchange Rates ────────────────────────────────────────
+function rateRow({icon,code,name,buy,sell}){
+  return `<div class="dr dr--rate">
+    <span class="dr-icon">${icon}</span>
+    <div class="dr-info"><span class="dr-code">${code}</span><span class="dr-name">${name}</span></div>
+    <div class="dr-buysell">
+      <span class="dr-bs-label">Compra</span><span class="dr-bs-val">${N(buy)}</span>
+      <span class="dr-bs-label">Venta</span><span class="dr-bs-val dr-bs-sell">${N(sell)}</span>
+    </div>
+  </div>`;
+}
 async function loadRates(){
   try{
     const d=await(await fetch("/api/rates")).json();
     const FLAGS={USD:"🇺🇸",EUR:"🇪🇺",BRL:"🇧🇷",ARS:"🇦🇷"};
-    const NAMES={USD:"Dólar USD",EUR:"Euro EUR",BRL:"Real BRL",ARS:"Peso ARS"};
-    document.getElementById("rates-list").innerHTML=Object.entries(d).map(([c,v])=>
-      row({icon:FLAGS[c],code:c,name:NAMES[c]||c,val:N(v.sell),chg:v.change!=="live"?v.change:"—"})
+    const NAMES={USD:"USD / PYG",EUR:"EUR / PYG",BRL:"BRL / PYG",ARS:"ARS / PYG"};
+    const ORDER=["USD","EUR","BRL","ARS"];
+    const entries=Object.entries(d).sort(([a],[b])=>{const ai=ORDER.indexOf(a),bi=ORDER.indexOf(b);return(ai===-1?99:ai)-(bi===-1?99:bi);});
+    document.getElementById("rates-list").innerHTML=entries.map(([c,v])=>
+      rateRow({icon:FLAGS[c]||"",code:c,name:NAMES[c]||c,buy:v.buy,sell:v.sell})
     ).join("");
     setT(["t-usd","t-usd2"],N(d.USD?.sell)+" ₲");
     setT(["t-eur","t-eur2"],N(d.EUR?.sell)+" ₲");
@@ -97,9 +146,11 @@ async function loadRates(){
 async function loadEconomic(){
   try{
     const d=await(await fetch("/api/economic")).json();
-    document.getElementById("economic-list").innerHTML=Object.values(d).map(v=>
-      row({code:v.label,name:String(v.year||""),val:String(v.value),unit:v.unit,noChg:true})
-    ).join("");
+    const SHOW=["pib_crec","inflacion","tpm","rating_sp","reservas"];
+    document.getElementById("economic-list").innerHTML=SHOW.filter(k=>d[k]).map(k=>{const v=d[k];
+      const sym=v.unit==="%" ? "%" : v.unit&&v.unit.includes("USD") ? " USD" : v.unit?" "+v.unit:"";
+      return row({code:v.label,name:String(v.year||""),val:String(v.value)+sym,unit:"",noChg:true});
+    }).join("");
   }catch{}
 }
 
@@ -107,9 +158,15 @@ async function loadEconomic(){
 async function loadCommodities(){
   try{
     const d=await(await fetch("/api/commodities")).json();
-    document.getElementById("commodities-list").innerHTML=Object.values(d).map(v=>
-      row({icon:v.flag,code:v.label,val:N(v.price,2),chg:v.change,unit:v.unit})
-    ).join("");
+    const COMD_DESC={"USD/oz":"Onza troy · USD","USD/bbl":"Barril · USD","USD/mmBtu":"mmBtu · USD","¢/bu":"Bushel · ¢ USD"};
+    const COMD_ORDER=["GC=F","CL=F","ZS=F","ZC=F","SI=F","NG=F","ZW=F"];
+    const sorted=COMD_ORDER.filter(k=>d[k]).map(k=>d[k]).concat(Object.entries(d).filter(([k])=>!COMD_ORDER.includes(k)).map(([,v])=>v));
+    document.getElementById("commodities-list").innerHTML=sorted.map(v=>{
+      const desc=COMD_DESC[v.unit]||v.unit||"";
+      const isUSD=v.unit&&v.unit.startsWith("USD");
+      const val=(isUSD?"$":"")+N(v.price,2)+(isUSD?"":" ¢");
+      return row({icon:v.flag,code:v.label,name:desc,val,chg:v.change,unit:"",wrapName:true});
+    }).join("");
     setT(["t-gold","t-gold2"],"$"+N(d["GC=F"]?.price,0),chgClass(d["GC=F"]?.change));
     setT(["t-soja","t-soja2"],N(d["ZS=F"]?.price,0)+"¢",chgClass(d["ZS=F"]?.change));
   }catch{document.getElementById("commodities-list").innerHTML=`<div class="dr"><span class="dr-name">Sin datos</span></div>`}
@@ -133,7 +190,7 @@ async function loadUSMarkets(){
     // Indexes list
     if(indexes){
       document.getElementById("indexes-list").innerHTML=Object.values(indexes).map(v=>
-        row({icon:v.flag,code:v.label,val:N(v.price,0),chg:v.change})
+        row({icon:v.flag,code:v.label,name:"USD · pts",val:"$"+N(v.price,0),chg:v.change})
       ).join("");
       setT(["t-sp","t-sp2"],N(indexes["^GSPC"]?.price,0),chgClass(indexes["^GSPC"]?.change));
     }
@@ -144,9 +201,9 @@ async function loadUSMarkets(){
 async function loadCrypto(){
   try{
     const d=await(await fetch("/api/crypto")).json();
-    const ICONS={BTC:"₿",ETH:"Ξ",USDT:"₮"};
+    const ICONS={BTC:"₿",ETH:"Ξ",USDT:"₮",SOL:"◎",BNB:"⬡"};
     document.getElementById("crypto-list").innerHTML=Object.values(d).map(v=>
-      row({icon:ICONS[v.symbol]||"",code:v.symbol,name:v.name,val:"$"+N(v.usd,2),chg:v.change_24h})
+      row({icon:ICONS[v.symbol]||"●",code:v.symbol,name:`${v.symbol} / USD`,val:"$"+N(v.usd,2),chg:v.change_24h})
     ).join("");
     setT(["t-btc","t-btc2"],"$"+N(d.bitcoin?.usd,0),chgClass(d.bitcoin?.change_24h));
     setT(["t-eth","t-eth2"],"$"+N(d.ethereum?.usd,0),chgClass(d.ethereum?.change_24h));
@@ -158,11 +215,13 @@ function injectTickerNews(items){
   const track=document.querySelector('.ticker-track');
   if(!track||!items.length)return;
   track.querySelectorAll('.ti[data-news]').forEach(el=>el.remove());
-  const tops=items.slice(0,5);
+  const tops=items.slice(0,8);
   const make=n=>{
     const s=document.createElement('span');
-    s.className='ti';s.dataset.news='1';
-    s.innerHTML=`<b>📰</b><span class="tv" style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;vertical-align:middle">${n.title}</span>`;
+    s.className='ti ti--news';s.dataset.news='1';
+    const href=n.url&&n.url!=='#'?n.url:'#';
+    const tag=href!=='#'?'a':'span';
+    s.innerHTML=`<b>📰</b><${tag} class="ti-headline"${tag==='a'?` href="${href}" target="_blank" rel="noopener"`:''} title="${n.outlet}">${n.title}</${tag}>`;
     return s;
   };
   const all=[...track.querySelectorAll('.ti:not([data-news])')];
@@ -174,17 +233,55 @@ function injectTickerNews(items){
 
 // ── News ──────────────────────────────────────────────────
 let allNews=[],activeFilter="Todos";
+let _scrollRaf=null,_scrollPaused=false,_scrollPos=0;
+const _SCROLL_PX_PER_SEC = 1000/105; // ~9.5 px/s
+
+function _startAutoscroll(){
+  const feed=document.getElementById("news-feed");
+  if(!feed)return;
+  if(_scrollRaf)cancelAnimationFrame(_scrollRaf);
+  let last=null;
+  function step(ts){
+    if(!_scrollPaused){
+      if(last!==null){
+        const delta=(ts-last)/1000;
+        _scrollPos+=_SCROLL_PX_PER_SEC*delta;
+        if(_scrollPos>=feed.scrollHeight-feed.clientHeight){
+          _scrollPos=0;
+        }
+        feed.scrollTop=_scrollPos;
+      }
+      last=ts;
+    } else {
+      last=null;
+    }
+    _scrollRaf=requestAnimationFrame(step);
+  }
+  _scrollRaf=requestAnimationFrame(step);
+}
+
 async function loadNews(){
   try{
     allNews=await(await fetch("/api/news")).json();
     buildFilters();renderNews(allNews);injectTickerNews(allNews);
+    const feed=document.getElementById("news-feed");
+    if(feed){
+      feed.addEventListener("mouseenter",()=>{_scrollPaused=true;});
+      feed.addEventListener("mouseleave",()=>{_scrollPaused=false;});
+    }
+    _startAutoscroll();
   }catch{document.getElementById("news-feed").innerHTML=`<div class="ni"><span class="nt">Error al cargar noticias</span></div>`}
 }
 function buildFilters(){
   const outlets=["Todos",...new Set(allNews.map(n=>n.outlet))];
   document.getElementById("news-filter").innerHTML=outlets.map(o=>`<button class="fbtn ${o===activeFilter?"active":""}" onclick="filterNews('${o}')">${o}</button>`).join("");
 }
-function filterNews(o){activeFilter=o;buildFilters();renderNews(o==="Todos"?allNews:allNews.filter(n=>n.outlet===o))}
+function filterNews(o){
+  activeFilter=o;buildFilters();
+  renderNews(o==="Todos"?allNews:allNews.filter(n=>n.outlet===o));
+  const feed=document.getElementById("news-feed");
+  if(feed){feed.scrollTop=0;_scrollPos=0;}
+}
 function renderNews(items){
   document.getElementById("news-feed").innerHTML=items.map(n=>`
     <div class="ni">
@@ -199,7 +296,16 @@ async function loadSummary(force=false){
   try{
     const url="/api/summary"+(force?"?force=1":"");
     const r=await(await fetch(url)).json();
-    if(t)t.textContent=r.summary;
+    if(t){
+      const TAG_LBL={pol:"Política",eco:"Economía",fx:"Divisas",py:"Paraguay",mkt:"Mercados"};
+      const points=Array.isArray(r.summary)?r.summary:[{text:r.summary,sentiment:"flat",tag:""}];
+      t.innerHTML=points.map(p=>{
+        const key=(p.tag||"").toLowerCase();
+        const lbl=TAG_LBL[key]||p.tag||"";
+        const badge=lbl?`<span class="sum-tag tag-${key}">${lbl}</span>`:"";
+        return `<li class="sum-item">${badge}<span class="sum-text">${p.text}</span></li>`;
+      }).join("");
+    }
     if(d)d.textContent=(r.cached?"Guardado":"Generado")+" · "+r.date;
   }catch{if(t)t.textContent="Error al generar el resumen."}
 }
@@ -211,23 +317,29 @@ async function refreshSummary(){
 }
 
 // ── Refresh & Init ────────────────────────────────────────
+const _DAYS  = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
+const _MONTHS= ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 function updateTime(){
   const el=document.getElementById("last-updated");
   if(!el)return;
-  const now=new Date();
-  const date=now.toLocaleDateString("es-PY",{weekday:"short",day:"2-digit",month:"short"});
-  const time=now.toLocaleTimeString("es-PY",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
-  el.textContent=date+" · "+time;
+  const n=new Date();
+  const pad=v=>String(v).padStart(2,"0");
+  const dateStr=`${_DAYS[n.getDay()]} ${n.getDate()} ${_MONTHS[n.getMonth()]}`;
+  const timeStr=`${pad(n.getHours())}:${pad(n.getMinutes())}:${pad(n.getSeconds())}`;
+  el.textContent=`${dateStr}  ·  ${timeStr}`;
 }
-setInterval(updateTime,1000);
+updateTime();setInterval(updateTime,1000);
 
 async function refreshAll(){
   await Promise.all([loadRates(),loadEconomic(),loadCommodities(),loadUSMarkets(),loadCrypto(),loadNews()]);
   updateTime();
 }
 
-(async()=>{
-  await refreshAll();
-  loadSummary();
-  setInterval(refreshAll,5*60*1000);
-})();
+if(document.getElementById('rates-list')){
+  (async()=>{
+    await refreshAll();
+    loadSummary();
+    setInterval(loadNews,3*60*1000);
+    setInterval(refreshAll,5*60*1000);
+  })();
+}

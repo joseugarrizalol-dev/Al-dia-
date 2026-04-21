@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sentinel — AL DÍA</title>
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body class="dashboard-page">
+
+<!-- ── HEADER ── -->
+<header>
+  <div class="hd-left">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+    <span class="logo-text">AL DÍA</span>
+    <span class="logo-sep"></span>
+    <nav class="hd-nav">
+      <a href="/" class="hd-nav-link">Mercados</a>
+      <a href="/sentinel" class="hd-nav-link hd-nav-link--active">Sentinel</a>
+    </nav>
+  </div>
+
+  <div class="hd-ticker">
+    <div class="ticker-track">
+      <span class="ti"><b>USD/PYG</b><span id="t-usd" class="tv">—</span></span>
+      <span class="ti"><b>EUR/PYG</b><span id="t-eur" class="tv">—</span></span>
+      <span class="ti"><b>BRL/PYG</b><span id="t-brl" class="tv">—</span></span>
+      <span class="ti"><b>BTC</b><span id="t-btc" class="tv">—</span></span>
+      <span class="ti"><b>ETH</b><span id="t-eth" class="tv">—</span></span>
+      <span class="ti"><b>Oro</b><span id="t-gold" class="tv">—</span></span>
+      <span class="ti"><b>Soja</b><span id="t-soja" class="tv">—</span></span>
+      <span class="ti"><b>S&amp;P 500</b><span id="t-sp" class="tv">—</span></span>
+      <span class="ti"><b>10Y</b><span id="t-10y" class="tv">—</span></span>
+      <span class="ti"><b>USD/PYG</b><span id="t-usd2" class="tv">—</span></span>
+      <span class="ti"><b>EUR/PYG</b><span id="t-eur2" class="tv">—</span></span>
+      <span class="ti"><b>BRL/PYG</b><span id="t-brl2" class="tv">—</span></span>
+      <span class="ti"><b>BTC</b><span id="t-btc2" class="tv">—</span></span>
+      <span class="ti"><b>ETH</b><span id="t-eth2" class="tv">—</span></span>
+      <span class="ti"><b>Oro</b><span id="t-gold2" class="tv">—</span></span>
+      <span class="ti"><b>Soja</b><span id="t-soja2" class="tv">—</span></span>
+      <span class="ti"><b>S&amp;P 500</b><span id="t-sp2" class="tv">—</span></span>
+      <span class="ti"><b>10Y</b><span id="t-10y2" class="tv">—</span></span>
+    </div>
+  </div>
+
+  <div class="hd-right">
+    <span id="last-updated"></span>
+    <button class="btn-icon" onclick="toggleTheme()" aria-label="Tema">
+      <svg id="theme-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+    </button>
+  </div>
+</header>
+
+<!-- ── GRID ── -->
+<div class="grid sentinel-grid">
+
+  <!-- Estadísticas -->
+  <div class="card">
+    <div class="card-hd">
+      <span class="card-icon">🛡</span>
+      <span class="card-title">Sentinel Score</span>
+      <span class="card-src">Análisis Groq</span>
+    </div>
+    <div class="card-body" style="padding:0">
+      <div class="snt-stat">
+        <span class="snt-stat-lbl">Artículos analizados</span>
+        <span class="snt-stat-val" id="snt-total">—</span>
+      </div>
+      <div class="snt-stat">
+        <span class="snt-stat-lbl">Score promedio</span>
+        <span class="snt-stat-val" id="snt-avg">—</span>
+      </div>
+      <div class="snt-stat" style="border:none">
+        <span class="snt-stat-lbl" style="font-size:.6rem;color:var(--t3)">🟢 80-100 ALTO &nbsp; 🟡 60-79 M.ALTO</span>
+      </div>
+      <div class="snt-stat" style="border:none;padding-top:0">
+        <span class="snt-stat-lbl" style="font-size:.6rem;color:var(--t3)">🟠 40-59 M.BAJO &nbsp; 🔴 0-39 BAJO</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Score por medio -->
+  <div class="card">
+    <div class="card-hd">
+      <span class="card-icon">📰</span>
+      <span class="card-title">Score por Medio</span>
+      <span class="card-src">Promedio</span>
+    </div>
+    <div class="card-body" id="snt-outlets-body" style="padding:0">
+      <div class="sk"></div><div class="sk"></div><div class="sk"></div>
+    </div>
+  </div>
+
+  <!-- Ranking -->
+  <div class="card card--snt">
+    <div class="card-hd">
+      <span class="card-icon">📊</span>
+      <span class="card-title">Últimas Noticias</span>
+      <span class="card-src">Más recientes primero</span>
+    </div>
+
+    <!-- filtros outlet -->
+    <div class="news-filter" id="snt-filter-outlet">
+      <div class="sk" style="width:60px;height:20px;display:inline-block"></div>
+    </div>
+
+    <!-- filtros encuadre -->
+    <div class="news-filter" id="snt-filter-enc" style="padding-top:0"></div>
+
+    <!-- feed -->
+    <div class="snt-feed" id="snt-feed">
+      <div class="sk"></div><div class="sk"></div><div class="sk"></div>
+      <div class="sk"></div><div class="sk"></div>
+    </div>
+  </div>
+
+</div><!-- /grid -->
+
+<!-- ── MARKET STATUS BAR ── -->
+<div class="mkt-bar" id="mkt-bar"></div>
+
+<script src="/static/js/dashboard.js"></script>
+<script src="/static/js/sentinel.js"></script>
+</body>
+</html>

@@ -2,6 +2,8 @@ import requests
 import feedparser
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from scrapers import _cache
 
 # ── Outlets: RSS feeds where available, HTML fallback ────────────────────────
 
@@ -105,7 +107,7 @@ def _scrape_html(outlet_name: str, urls: list) -> list:
     articles = []
     for url in urls:
         try:
-            res = requests.get(url, headers=headers, timeout=10)
+            res = requests.get(url, headers=headers, timeout=5)
             if not res.ok:
                 continue
             soup = BeautifulSoup(res.text, "html.parser")
@@ -136,10 +138,33 @@ def _scrape_html(outlet_name: str, urls: list) -> list:
     return articles
 
 
+def _interleave(buckets: list) -> list:
+    """Round-robin merge so no outlet appears in a long run."""
+    result = []
+    buckets = [b for b in buckets if b]
+    while buckets:
+        for b in buckets[:]:
+            if b:
+                result.append(b.pop(0))
+            else:
+                buckets.remove(b)
+    return result
+
+
 def get_news() -> list:
-    articles = []
-    for name, urls in OUTLETS_RSS.items():
-        articles.extend(_scrape_rss(name, urls))
-    for name, urls in OUTLETS_HTML.items():
-        articles.extend(_scrape_html(name, urls))
-    return articles if articles else DEMO_NEWS
+    cached = _cache.get("news")
+    if cached is not None:
+        return cached
+
+    tasks = []
+    with ThreadPoolExecutor(max_workers=8) as ex:
+        for name, urls in OUTLETS_RSS.items():
+            tasks.append(ex.submit(_scrape_rss, name, urls))
+        for name, urls in OUTLETS_HTML.items():
+            tasks.append(ex.submit(_scrape_html, name, urls))
+        buckets = [f.result() for f in as_completed(tasks)]
+
+    mixed = _interleave([b for b in buckets if b])
+    result = mixed if mixed else DEMO_NEWS
+    _cache.set("news", result, 180)
+    return result
