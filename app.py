@@ -26,8 +26,8 @@ def _sentinel_refresh():
     if str(_SENTINEL_BACKEND) not in sys.path:
         sys.path.insert(0, str(_SENTINEL_BACKEND))
     try:
-        from app.scrapers.rss import run_scraper
-        from app.analysis.sentinel import run_analysis
+        from snt.scrapers.rss import run_scraper
+        from snt.analysis.sentinel import run_analysis
         scrape = run_scraper()
         analysis = run_analysis(batch=30)
         print(f"[Sentinel] refresh — scraped: {scrape}, analyzed: {analysis}")
