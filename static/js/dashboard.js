@@ -47,6 +47,26 @@ function chgClass(s){if(!s||s==="—"||s==="flat")return"flat";return s.startsWi
 function chgBg(s){const c=chgClass(s);return c==="up"?"chg-up":c==="down"?"chg-dn":"chg-fl"}
 function outletCls(o){const l=o.toLowerCase();if(l.includes("abc"))return"o-abc";if(l.includes("ltima")||l.includes("hora"))return"o-uh";if(l.includes("naci"))return"o-ln";if(l.includes("hoy"))return"o-hoy";return"o-other"}
 
+// ── Flash on change ───────────────────────────────────────
+function snapVals(id){
+  const m={};
+  document.getElementById(id)?.querySelectorAll('[data-id]').forEach(e=>m[e.dataset.id]=e.textContent.trim());
+  return m;
+}
+function flashDiff(id,snap){
+  if(!snap||!Object.keys(snap).length)return;
+  document.getElementById(id)?.querySelectorAll('[data-id]').forEach(e=>{
+    const old=snap[e.dataset.id],cur=e.textContent.trim();
+    if(old!==undefined&&old!==cur&&old!=="—"&&cur!=="—"){
+      e.classList.remove('flash-up','flash-dn');
+      void e.offsetWidth;
+      const chgEl=e.closest('.dr')?.querySelector('.dr-chg');
+      e.classList.add(chgEl?.classList.contains('chg-up')?'flash-up':'flash-dn');
+      setTimeout(()=>e.classList.remove('flash-up','flash-dn'),900);
+    }
+  });
+}
+
 // ── Data row builder ──────────────────────────────────────
 function row({icon="",code,name="",val,chg="",unit="",noChg=false,wrapName=false}){
   const chgHtml=noChg?"":(`<span class="dr-chg ${chgBg(chg)}">${chg&&chg!=="—"?chg:"—"}</span>`);
@@ -56,7 +76,7 @@ function row({icon="",code,name="",val,chg="",unit="",noChg=false,wrapName=false
       <span class="dr-code">${code}</span>
       <span class="dr-name${wrapName?" dr-name--wrap":""}">${name}</span>
     </div>
-    <span class="dr-val">${val}${unit?`<span class="dr-unit">${unit}</span>`:""}</span>
+    <span class="dr-val" data-id="${code}">${val}${unit?`<span class="dr-unit">${unit}</span>`:""}</span>
     ${chgHtml}
   </div>`
 }
@@ -121,12 +141,13 @@ function rateRow({icon,code,name,buy,sell}){
     <span class="dr-icon">${icon}</span>
     <div class="dr-info"><span class="dr-code">${code}</span><span class="dr-name">${name}</span></div>
     <div class="dr-buysell">
-      <span class="dr-bs-label">Compra</span><span class="dr-bs-val">${N(buy)}</span>
-      <span class="dr-bs-label">Venta</span><span class="dr-bs-val dr-bs-sell">${N(sell)}</span>
+      <span class="dr-bs-label">Compra</span><span class="dr-bs-val" data-id="${code}-buy">${N(buy)}</span>
+      <span class="dr-bs-label">Venta</span><span class="dr-bs-val dr-bs-sell" data-id="${code}-sell">${N(sell)}</span>
     </div>
   </div>`;
 }
 async function loadRates(){
+  const snap=snapVals("rates-list");
   try{
     const d=await(await fetch("/api/rates")).json();
     const FLAGS={USD:"🇺🇸",EUR:"🇪🇺",BRL:"🇧🇷",ARS:"🇦🇷"};
@@ -136,6 +157,7 @@ async function loadRates(){
     document.getElementById("rates-list").innerHTML=entries.map(([c,v])=>
       rateRow({icon:FLAGS[c]||"",code:c,name:NAMES[c]||c,buy:v.buy,sell:v.sell})
     ).join("");
+    flashDiff("rates-list",snap);
     setT(["t-usd","t-usd2"],N(d.USD?.sell)+" ₲");
     setT(["t-eur","t-eur2"],N(d.EUR?.sell)+" ₲");
     setT(["t-brl","t-brl2"],N(d.BRL?.sell)+" ₲");
@@ -156,6 +178,7 @@ async function loadEconomic(){
 
 // ── Commodities ───────────────────────────────────────────
 async function loadCommodities(){
+  const snap=snapVals("commodities-list");
   try{
     const d=await(await fetch("/api/commodities")).json();
     const COMD_DESC={"USD/oz":"Onza troy · USD","USD/bbl":"Barril · USD","USD/mmBtu":"mmBtu · USD","¢/bu":"Bushel · ¢ USD"};
@@ -167,6 +190,7 @@ async function loadCommodities(){
       const val=(isUSD?"$":"")+N(v.price,2)+(isUSD?"":" ¢");
       return row({icon:v.flag,code:v.label,name:desc,val,chg:v.change,unit:"",wrapName:true});
     }).join("");
+    flashDiff("commodities-list",snap);
     setT(["t-gold","t-gold2"],"$"+N(d["GC=F"]?.price,0),chgClass(d["GC=F"]?.change));
     setT(["t-soja","t-soja2"],N(d["ZS=F"]?.price,0)+"¢",chgClass(d["ZS=F"]?.change));
   }catch{document.getElementById("commodities-list").innerHTML=`<div class="dr"><span class="dr-name">Sin datos</span></div>`}
@@ -174,6 +198,8 @@ async function loadCommodities(){
 
 // ── US Markets ────────────────────────────────────────────
 async function loadUSMarkets(){
+  const snapRates=snapVals("rates-us-list");
+  const snapIdx=snapVals("indexes-list");
   try{
     const d=await(await fetch("/api/markets")).json();
     const {treasuries,indexes,effr}=d;
@@ -185,6 +211,7 @@ async function loadUSMarkets(){
       if(v) rateRows.push(row({icon:"🇺🇸",code:v.label,val:N(v.price,2)+"%",chg:v.change}));
     });
     document.getElementById("rates-us-list").innerHTML=rateRows.join("");
+    flashDiff("rates-us-list",snapRates);
     if(treasuries?.["^TNX"]) setT(["t-10y","t-10y2"],N(treasuries["^TNX"].price,2)+"%",chgClass(treasuries["^TNX"].change));
 
     // Indexes list
@@ -192,6 +219,7 @@ async function loadUSMarkets(){
       document.getElementById("indexes-list").innerHTML=Object.values(indexes).map(v=>
         row({icon:v.flag,code:v.label,name:"USD · pts",val:"$"+N(v.price,0),chg:v.change})
       ).join("");
+      flashDiff("indexes-list",snapIdx);
       setT(["t-sp","t-sp2"],N(indexes["^GSPC"]?.price,0),chgClass(indexes["^GSPC"]?.change));
     }
   }catch{}
@@ -199,12 +227,14 @@ async function loadUSMarkets(){
 
 // ── Crypto ────────────────────────────────────────────────
 async function loadCrypto(){
+  const snap=snapVals("crypto-list");
   try{
     const d=await(await fetch("/api/crypto")).json();
     const ICONS={BTC:"₿",ETH:"Ξ",USDT:"₮",SOL:"◎",BNB:"⬡"};
     document.getElementById("crypto-list").innerHTML=Object.values(d).map(v=>
       row({icon:ICONS[v.symbol]||"●",code:v.symbol,name:`${v.symbol} / USD`,val:"$"+N(v.usd,2),chg:v.change_24h})
     ).join("");
+    flashDiff("crypto-list",snap);
     setT(["t-btc","t-btc2"],"$"+N(d.bitcoin?.usd,0),chgClass(d.bitcoin?.change_24h));
     setT(["t-eth","t-eth2"],"$"+N(d.ethereum?.usd,0),chgClass(d.ethereum?.change_24h));
   }catch{}
@@ -340,6 +370,8 @@ if(document.getElementById('rates-list')){
     await refreshAll();
     loadSummary();
     setInterval(loadNews,3*60*1000);
-    setInterval(()=>{loadRates();loadCrypto();loadCommodities();loadUSMarkets();loadEconomic();},60*1000);
+    setInterval(()=>{loadCrypto();loadUSMarkets();},30*1000);          // rápidos: crypto + índices
+    setInterval(()=>{loadRates();loadCommodities();},60*1000);         // medios: divisas + commodities
+    setInterval(loadEconomic,15*60*1000);                              // lentos: macro PY
   })();
 }
