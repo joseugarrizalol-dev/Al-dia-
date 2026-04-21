@@ -39,8 +39,15 @@ def _start_scheduler():
     from apscheduler.schedulers.background import BackgroundScheduler
     scheduler = BackgroundScheduler()
     scheduler.add_job(_sentinel_refresh, "interval", hours=4, id="sentinel_refresh")
+    scheduler.add_job(_sentinel_refresh, "date", id="sentinel_boot")  # run once on startup
     scheduler.start()
     print("[Sentinel] scheduler started — refresh every 4 hours")
+
+
+# Start scheduler when loaded by gunicorn (not just __main__)
+import os as _os
+if not _os.environ.get("WERKZEUG_RUN_MAIN"):
+    _start_scheduler()
 
 @app.route("/")
 def index():
@@ -128,5 +135,4 @@ def sentinel_api_stats():
 
 if __name__ == "__main__":
     print("AL DÍA — http://localhost:5000")
-    _start_scheduler()
     app.run(debug=True, use_reloader=False)

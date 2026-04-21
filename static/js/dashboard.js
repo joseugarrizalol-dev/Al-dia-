@@ -160,7 +160,7 @@ async function loadCommodities(){
     const d=await(await fetch("/api/commodities")).json();
     const COMD_DESC={"USD/oz":"Onza troy · USD","USD/bbl":"Barril · USD","USD/mmBtu":"mmBtu · USD","¢/bu":"Bushel · ¢ USD"};
     const COMD_ORDER=["GC=F","CL=F","ZS=F","ZC=F","SI=F","NG=F","ZW=F"];
-    const sorted=COMD_ORDER.filter(k=>d[k]).map(k=>d[k]).concat(Object.entries(d).filter(([k])=>!COMD_ORDER.includes(k)).map(([,v])=>v));
+    const sorted=COMD_ORDER.filter(k=>d[k]).map(k=>d[k]).concat(Object.entries(d).filter(([k])=>!COMD_ORDER.includes(k)).map(([,v])=>v)).slice(0,5);
     document.getElementById("commodities-list").innerHTML=sorted.map(v=>{
       const desc=COMD_DESC[v.unit]||v.unit||"";
       const isUSD=v.unit&&v.unit.startsWith("USD");
