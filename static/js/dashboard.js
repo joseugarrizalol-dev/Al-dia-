@@ -20,12 +20,29 @@
     greetEl.textContent=buildGreeting();
     setInterval(()=>{if(greetEl&&_name)greetEl.textContent=buildGreeting();},1000);
   }
+  const _SESSION_START=Date.now();
+  const _LAST_VISIT_KEY='ald_last_visit';
+
   function _logVisit(name){
     if(!window._GS_WEBHOOK)return;
+    const ua=navigator.userAgent;
+    const device=/Mobi|Android/i.test(ua)?'Mobile':'Desktop';
+    const lang=navigator.language||'';
+    const lastVisit=localStorage.getItem(_LAST_VISIT_KEY)||'First visit';
+    localStorage.setItem(_LAST_VISIT_KEY,new Date().toISOString());
     fetch(window._GS_WEBHOOK,{method:'POST',mode:'no-cors',
-      body:JSON.stringify({name,ts:new Date().toISOString()})
+      body:JSON.stringify({name,ts:new Date().toISOString(),device,lang,lastVisit})
     }).catch(()=>{});
   }
+
+  function _logSessionEnd(name){
+    if(!window._GS_WEBHOOK||!name)return;
+    const mins=Math.round((Date.now()-_SESSION_START)/60000);
+    navigator.sendBeacon(window._GS_WEBHOOK,
+      JSON.stringify({type:'session',name,duration:mins+'min'})
+    );
+  }
+
   function enter(name){
     _name=name;
     localStorage.setItem(KEY,name);
@@ -33,6 +50,8 @@
     startClock();
     _logVisit(name);
   }
+
+  window.addEventListener('beforeunload',()=>_logSessionEnd(_name));
   const saved=localStorage.getItem(KEY);
   if(saved){_name=saved;if(overlay)overlay.classList.add("hidden");startClock();}
   if(input){
