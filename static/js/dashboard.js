@@ -1,6 +1,6 @@
 // ── User name & greeting ──────────────────────────────────
 (function(){
-  const KEY="ald_username_v2";
+  const KEY="ald_username_v3";
   const overlay=document.getElementById("welcome-overlay");
   const input=document.getElementById("welcome-input");
   const btn=document.getElementById("welcome-btn");
