@@ -81,11 +81,44 @@ header {
   color: var(--acc);
 }
 
+.logo-slider {
+  overflow: hidden;
+  position: relative;
+  width: 68px;
+  height: 32px;
+}
 .logo-text {
   font-size: .9rem;
   font-weight: 800;
   letter-spacing: -.04em;
   color: var(--t1);
+}
+.logo-slide {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 68px;
+  display: flex;
+  align-items: center;
+  transform: translateX(110%);
+  opacity: 0;
+  transition: transform .45s cubic-bezier(.4,0,.2,1), opacity .45s;
+  white-space: nowrap;
+}
+.logo-slide:last-child {
+  white-space: normal;
+  font-size: .52rem;
+  line-height: 1.3;
+  letter-spacing: -.01em;
+}
+.logo-slide.active {
+  transform: translateX(0);
+  opacity: 1;
+}
+.logo-slide.exit {
+  transform: translateX(-110%);
+  opacity: 0;
 }
 
 .logo-sep {

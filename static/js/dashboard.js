@@ -20,11 +20,18 @@
     greetEl.textContent=buildGreeting();
     setInterval(()=>{if(greetEl&&_name)greetEl.textContent=buildGreeting();},1000);
   }
+  function _logVisit(name){
+    if(!window._GS_WEBHOOK)return;
+    fetch(window._GS_WEBHOOK,{method:'POST',mode:'no-cors',
+      body:JSON.stringify({name,ts:new Date().toISOString()})
+    }).catch(()=>{});
+  }
   function enter(name){
     _name=name;
     localStorage.setItem(KEY,name);
     if(overlay)overlay.classList.add("hidden");
     startClock();
+    _logVisit(name);
   }
   const saved=localStorage.getItem(KEY);
   if(saved){_name=saved;if(overlay)overlay.classList.add("hidden");startClock();}
@@ -546,4 +553,20 @@ if(document.getElementById('rates-list')){
     document.body.style.cursor='';
     document.body.style.userSelect='';
   });
+})();
+
+// ── Logo slider ───────────────────────────────────────────
+(function(){
+  const slides=document.querySelectorAll('.logo-slide');
+  if(slides.length<2)return;
+  let cur=0;
+  setInterval(()=>{
+    const next=(cur+1)%slides.length;
+    slides[cur].classList.add('exit');
+    slides[cur].classList.remove('active');
+    slides[next].classList.add('active');
+    slides[next].classList.remove('exit');
+    setTimeout(()=>slides[cur].classList.remove('exit'),450);
+    cur=next;
+  },3500);
 })();
