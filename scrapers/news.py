@@ -221,7 +221,7 @@ def _scrape_abc_rural() -> list:
             title = h.group(1).strip()
             if url not in seen:
                 seen.add(url)
-                articles.append({"title": title, "url": url, "outlet": "ABC Rural", "agro": True})
+                articles.append({"title": title, "url": url, "outlet": "Rurales", "agro": True})
             if len(articles) >= 8:
                 break
         return articles

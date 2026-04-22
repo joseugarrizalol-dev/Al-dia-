@@ -45,7 +45,7 @@ function toggleTheme(){const d=document.documentElement.getAttribute("data-theme
 const N=(n,d=0)=>n==null?"—":new Intl.NumberFormat("es-PY",{minimumFractionDigits:d,maximumFractionDigits:d}).format(n);
 function chgClass(s){if(!s||s==="—"||s==="flat")return"flat";return s.startsWith("+")||Number(s)>0?"up":s.startsWith("-")||Number(s)<0?"down":"flat"}
 function chgBg(s){const c=chgClass(s);return c==="up"?"chg-up":c==="down"?"chg-dn":"chg-fl"}
-function outletCls(o){const l=o.toLowerCase();if(l.includes("valor")||l.includes("vagro"))return"o-vagro";if(l.includes("abc"))return"o-abc";if(l.includes("ltima")||l.includes("hora"))return"o-uh";if(l.includes("naci"))return"o-ln";if(l.includes("hoy"))return"o-hoy";return"o-other"}
+function outletCls(o){const l=o.toLowerCase();if(l.includes("valor")||l.includes("vagro"))return"o-vagro";if(l.includes("rural")||l.includes("rurales"))return"o-rural";if(l.includes("abc"))return"o-abc";if(l.includes("ltima")||l.includes("hora"))return"o-uh";if(l.includes("naci"))return"o-ln";if(l.includes("hoy"))return"o-hoy";return"o-other"}
 
 // ── Flash on change ───────────────────────────────────────
 function snapVals(id){
