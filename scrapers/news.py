@@ -28,6 +28,30 @@ OUTLETS_HTML = {
     ],
 }
 
+# ── Agro outlets ─────────────────────────────────────────────────────────────
+
+AGRO_OUTLETS_RSS = {}
+
+AGRO_OUTLETS_HTML = {
+    "Valor Agro": [
+        "https://valoragro.com.py/",
+        "https://valoragro.com.py/category/noticias/",
+    ],
+}
+
+AGRO_KEYWORDS = {
+    "soja", "maíz", "maiz", "trigo", "arroz", "algodón", "algodon",
+    "girasol", "canola", "sorgo", "stevia", "yerba", "caña", "cana",
+    "ganado", "bovino", "porcino", "avícola", "avicola", "tambo",
+    "agro", "rural", "campo", "siembra", "cosecha", "zafra",
+    "commodit", "bushel", "tonelad", "hectárea", "hectarea",
+    "fertiliz", "pesticid", "herbicid", "semilla", "export",
+    "cbot", "chicago", "paraguay agro", "senacsa", "mag ",
+    "capeco", "umss", "uagrm", "frigorífico", "frigorifico",
+    "deforestaci", "sequía", "sequia", "lluvia", "climátic", "climatico",
+    "precio soja", "precio maíz", "precio trigo", "precio ganado",
+}
+
 INCLUDE_KEYWORDS = {
     "econom", "finanz", "mercado", "dólar", "guaraní", "inflaci",
     "banco", "bcp", "inversión", "inversi", "exporta", "importa",
@@ -151,20 +175,112 @@ def _interleave(buckets: list) -> list:
     return result
 
 
+def _is_agro_relevant(title: str) -> bool:
+    t = title.lower()
+    return any(kw in t for kw in AGRO_KEYWORDS)
+
+
+def _scrape_rss_agro(outlet_name: str, urls: list) -> list:
+    seen = set()
+    articles = []
+    for url in urls:
+        try:
+            feed = feedparser.parse(url)
+            for entry in feed.entries:
+                title = entry.get("title", "").strip()
+                link  = entry.get("link", "#")
+                if title and title not in seen:
+                    seen.add(title)
+                    articles.append({"title": title, "url": link, "outlet": outlet_name, "agro": True})
+                if len(articles) >= 10:
+                    return articles
+        except Exception:
+            pass
+    return articles
+
+
+def _scrape_abc_rural() -> list:
+    import re as _re
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36"}
+    try:
+        res = requests.get("https://www.abc.com.py/negocios/abc-campo/", headers=headers, timeout=8)
+        if not res.ok:
+            return []
+        text = res.content.decode("utf-8")
+
+        # Arc JSON: canonical_url appears first, then headlines.basic within ~3000 chars
+        seen = set()
+        articles = []
+        for m in _re.finditer(r'"canonical_url":"(/negocios/abc-campo/[^"]+)"', text):
+            path  = m.group(1)
+            chunk = text[m.start(): m.start() + 3000]
+            h     = _re.search(r'"headlines":\{[^}]*"basic":"([^"]{10,})"', chunk)
+            if not h:
+                continue
+            url   = "https://www.abc.com.py" + path
+            title = h.group(1).strip()
+            if url not in seen:
+                seen.add(url)
+                articles.append({"title": title, "url": url, "outlet": "ABC Rural", "agro": True})
+            if len(articles) >= 8:
+                break
+        return articles
+    except Exception:
+        return []
+
+
+def _scrape_html_agro(outlet_name: str, urls: list) -> list:
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36"}
+    seen_urls = set()
+    articles = []
+    for url in urls:
+        try:
+            res = requests.get(url, headers=headers, timeout=6)
+            if not res.ok:
+                continue
+            res.encoding = res.apparent_encoding or "utf-8"
+            soup = BeautifulSoup(res.text, "html.parser")
+            base_domain = urlparse(url).netloc
+            for a in soup.find_all("a", href=True):
+                # Get only direct text nodes, skipping child span categories
+                title = " ".join(t.strip() for t in a.find_all(string=True, recursive=False) if t.strip())
+                if not title:
+                    title = a.get_text(strip=True)
+                href  = urljoin(url, a["href"])
+                if (len(title) > 35 and href not in seen_urls
+                        and _is_article_link(href, base_domain)):
+                    seen_urls.add(href)
+                    articles.append({"title": title, "url": href, "outlet": outlet_name, "agro": True})
+                if len(articles) >= 10:
+                    break
+        except Exception:
+            pass
+    return articles
+
+
 def get_news() -> list:
     cached = _cache.get("news")
     if cached is not None:
         return cached
 
     tasks = []
-    with ThreadPoolExecutor(max_workers=8) as ex:
+    with ThreadPoolExecutor(max_workers=10) as ex:
         for name, urls in OUTLETS_RSS.items():
             tasks.append(ex.submit(_scrape_rss, name, urls))
         for name, urls in OUTLETS_HTML.items():
             tasks.append(ex.submit(_scrape_html, name, urls))
+        for name, urls in AGRO_OUTLETS_RSS.items():
+            tasks.append(ex.submit(_scrape_rss_agro, name, urls))
+        for name, urls in AGRO_OUTLETS_HTML.items():
+            tasks.append(ex.submit(_scrape_html_agro, name, urls))
+        tasks.append(ex.submit(_scrape_abc_rural))
         buckets = [f.result() for f in as_completed(tasks)]
 
-    mixed = _interleave([b for b in buckets if b])
-    result = mixed if mixed else DEMO_NEWS
+    # Separate agro buckets from general, preserve per-outlet structure for interleave
+    agro_buckets    = [b for b in buckets if b and b[0].get("agro")]
+    general_buckets = [b for b in buckets if b and not b[0].get("agro")]
+    mixed       = _interleave(general_buckets)
+    mixed_agro  = _interleave(agro_buckets)
+    result = (mixed if mixed else DEMO_NEWS) + mixed_agro
     _cache.set("news", result, 180)
     return result

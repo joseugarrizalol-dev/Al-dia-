@@ -20,26 +20,15 @@
     </nav>
   </div>
 
-  <div class="hd-ticker">
-    <div class="ticker-track">
-      <span class="ti"><b>USD/PYG</b><span id="t-usd" class="tv">—</span></span>
-      <span class="ti"><b>EUR/PYG</b><span id="t-eur" class="tv">—</span></span>
-      <span class="ti"><b>BRL/PYG</b><span id="t-brl" class="tv">—</span></span>
-      <span class="ti"><b>BTC</b><span id="t-btc" class="tv">—</span></span>
-      <span class="ti"><b>ETH</b><span id="t-eth" class="tv">—</span></span>
-      <span class="ti"><b>Oro</b><span id="t-gold" class="tv">—</span></span>
-      <span class="ti"><b>Soja</b><span id="t-soja" class="tv">—</span></span>
-      <span class="ti"><b>S&amp;P 500</b><span id="t-sp" class="tv">—</span></span>
-      <span class="ti"><b>10Y</b><span id="t-10y" class="tv">—</span></span>
-      <span class="ti"><b>USD/PYG</b><span id="t-usd2" class="tv">—</span></span>
-      <span class="ti"><b>EUR/PYG</b><span id="t-eur2" class="tv">—</span></span>
-      <span class="ti"><b>BRL/PYG</b><span id="t-brl2" class="tv">—</span></span>
-      <span class="ti"><b>BTC</b><span id="t-btc2" class="tv">—</span></span>
-      <span class="ti"><b>ETH</b><span id="t-eth2" class="tv">—</span></span>
-      <span class="ti"><b>Oro</b><span id="t-gold2" class="tv">—</span></span>
-      <span class="ti"><b>Soja</b><span id="t-soja2" class="tv">—</span></span>
-      <span class="ti"><b>S&amp;P 500</b><span id="t-sp2" class="tv">—</span></span>
-      <span class="ti"><b>10Y</b><span id="t-10y2" class="tv">—</span></span>
+  <div class="hd-ticker hd-ticker--sentinel">
+    <div class="ticker-track ticker-track--sentinel">
+      <span class="ti ti--sentinel">Mejores decisiones comienzan con mejor información.</span>
+      <span class="ti ti--sentinel ti--sep">—</span>
+      <span class="ti ti--sentinel">Mejores decisiones comienzan con mejor información.</span>
+      <span class="ti ti--sentinel ti--sep">—</span>
+      <span class="ti ti--sentinel">Mejores decisiones comienzan con mejor información.</span>
+      <span class="ti ti--sentinel ti--sep">—</span>
+      <span class="ti ti--sentinel">Mejores decisiones comienzan con mejor información.</span>
     </div>
   </div>
 
@@ -51,75 +40,17 @@
   </div>
 </header>
 
-<!-- ── GRID ── -->
-<div class="grid sentinel-grid">
-
-  <!-- Estadísticas -->
-  <div class="card">
-    <div class="card-hd">
-      <span class="card-icon">🛡</span>
-      <span class="card-title">Sentinel Score</span>
-      <span class="card-src">Análisis Groq</span>
-    </div>
-    <div class="card-body" style="padding:0">
-      <div class="snt-stat">
-        <span class="snt-stat-lbl">Artículos analizados</span>
-        <span class="snt-stat-val" id="snt-total">—</span>
-      </div>
-      <div class="snt-stat">
-        <span class="snt-stat-lbl">Score promedio</span>
-        <span class="snt-stat-val" id="snt-avg">—</span>
-      </div>
-      <div class="snt-stat" style="border:none">
-        <span class="snt-stat-lbl" style="font-size:.6rem;color:var(--t3)">🟢 80-100 ALTO &nbsp; 🟡 60-79 M.ALTO</span>
-      </div>
-      <div class="snt-stat" style="border:none;padding-top:0">
-        <span class="snt-stat-lbl" style="font-size:.6rem;color:var(--t3)">🟠 40-59 M.BAJO &nbsp; 🔴 0-39 BAJO</span>
-      </div>
-    </div>
+<!-- ── MAINTENANCE SCREEN ── -->
+<div class="snt-maintenance">
+  <div class="snt-maintenance-box">
+    <div class="snt-maintenance-badge">EN PRODUCCIÓN</div>
+    <h1 class="snt-maintenance-title">Sentinel</h1>
+    <p class="snt-maintenance-sub">Herramienta en desarrollo activo.<br>Estará disponible próximamente.</p>
+    <p class="snt-maintenance-brief">CADA NOTICIA ES UNA OPERACIÓN. SENTINEL ANALIZA EN TIEMPO REAL LA PRECISIÓN FACTUAL, EL LENGUAJE Y EL ENCUADRE DE LOS MEDIOS PARAGUAYOS — ASIGNANDO UN ÍNDICE DE INTEGRIDAD A CADA TITULAR. INTELIGENCIA PURA. SIN FILTROS. SIN AGENDA.</p>
+    <a href="/" class="snt-maintenance-back">Volver a Mercados</a>
   </div>
-
-  <!-- Score por medio -->
-  <div class="card">
-    <div class="card-hd">
-      <span class="card-icon">📰</span>
-      <span class="card-title">Score por Medio</span>
-      <span class="card-src">Promedio</span>
-    </div>
-    <div class="card-body" id="snt-outlets-body" style="padding:0">
-      <div class="sk"></div><div class="sk"></div><div class="sk"></div>
-    </div>
-  </div>
-
-  <!-- Ranking -->
-  <div class="card card--snt">
-    <div class="card-hd">
-      <span class="card-icon">📊</span>
-      <span class="card-title">Últimas Noticias</span>
-      <span class="card-src">Más recientes primero</span>
-    </div>
-
-    <!-- filtros outlet -->
-    <div class="news-filter" id="snt-filter-outlet">
-      <div class="sk" style="width:60px;height:20px;display:inline-block"></div>
-    </div>
-
-    <!-- filtros encuadre -->
-    <div class="news-filter" id="snt-filter-enc" style="padding-top:0"></div>
-
-    <!-- feed -->
-    <div class="snt-feed" id="snt-feed">
-      <div class="sk"></div><div class="sk"></div><div class="sk"></div>
-      <div class="sk"></div><div class="sk"></div>
-    </div>
-  </div>
-
-</div><!-- /grid -->
-
-<!-- ── MARKET STATUS BAR ── -->
-<div class="mkt-bar" id="mkt-bar"></div>
+</div>
 
 <script src="/static/js/dashboard.js"></script>
-<script src="/static/js/sentinel.js"></script>
 </body>
 </html>

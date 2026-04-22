@@ -44,10 +44,10 @@ def _start_scheduler():
     print("[Sentinel] scheduler started — refresh every 4 hours")
 
 
-# Start scheduler when loaded by gunicorn (not just __main__)
-import os as _os
-if not _os.environ.get("WERKZEUG_RUN_MAIN"):
-    _start_scheduler()
+# Sentinel scheduler disabled
+# import os as _os
+# if not _os.environ.get("WERKZEUG_RUN_MAIN"):
+#     _start_scheduler()
 
 @app.route("/")
 def index():

@@ -7,7 +7,7 @@ STATIC = {
     "rating_sp":  {"label": "Rating S&P",        "value": "BB",    "unit": "",    "year": "S&P"},
     "rating_mdy": {"label": "Rating Moody's",     "value": "Ba1",   "unit": "",    "year": "Moody's"},
     "tpm":        {"label": "TPM · BCP",          "value": "6,00",  "unit": "%",   "year": "BCP"},
-    "reservas":   {"label": "Reservas intern.",   "value": "10.100","unit": "M USD","year": "BCP"},
+    "reservas":   {"label": "Reservas intern.",   "value": "10,1",  "unit": "B USD","year": "BCP"},
     "deuda_ext":  {"label": "Deuda externa",      "value": "29,9",  "unit": "B USD","year": "FMI"},
 }
 

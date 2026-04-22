@@ -45,7 +45,7 @@ function toggleTheme(){const d=document.documentElement.getAttribute("data-theme
 const N=(n,d=0)=>n==null?"—":new Intl.NumberFormat("es-PY",{minimumFractionDigits:d,maximumFractionDigits:d}).format(n);
 function chgClass(s){if(!s||s==="—"||s==="flat")return"flat";return s.startsWith("+")||Number(s)>0?"up":s.startsWith("-")||Number(s)<0?"down":"flat"}
 function chgBg(s){const c=chgClass(s);return c==="up"?"chg-up":c==="down"?"chg-dn":"chg-fl"}
-function outletCls(o){const l=o.toLowerCase();if(l.includes("abc"))return"o-abc";if(l.includes("ltima")||l.includes("hora"))return"o-uh";if(l.includes("naci"))return"o-ln";if(l.includes("hoy"))return"o-hoy";return"o-other"}
+function outletCls(o){const l=o.toLowerCase();if(l.includes("valor")||l.includes("vagro"))return"o-vagro";if(l.includes("abc"))return"o-abc";if(l.includes("ltima")||l.includes("hora"))return"o-uh";if(l.includes("naci"))return"o-ln";if(l.includes("hoy"))return"o-hoy";return"o-other"}
 
 // ── Flash on change ───────────────────────────────────────
 function snapVals(id){
@@ -263,31 +263,35 @@ function injectTickerNews(items){
 
 // ── News ──────────────────────────────────────────────────
 let allNews=[],activeFilter="Todos";
-let _scrollRaf=null,_scrollPaused=false,_scrollPos=0;
-const _SCROLL_PX_PER_SEC = 1000/105; // ~9.5 px/s
+let _scrollPaused=false,_scrollPos=0;
+let _scrollTrack=null,_scrollClone=null;
+const _SCROLL_PX_PER_SEC=1000/105;
+
+function _nftApplyAnim(track,pos){
+  const halfH=track.scrollHeight/2;
+  const dur=Math.round((halfH/_SCROLL_PX_PER_SEC)*1000);
+  track._nftDur=dur;
+  const delay=-Math.round((pos/halfH)*dur);
+  track.style.animation=`news-scroll ${dur}ms ${delay}ms linear infinite`;
+}
 
 function _startAutoscroll(){
   const feed=document.getElementById("news-feed");
-  if(!feed)return;
-  if(_scrollRaf)cancelAnimationFrame(_scrollRaf);
-  let last=null;
-  function step(ts){
-    if(!_scrollPaused){
-      if(last!==null){
-        const delta=(ts-last)/1000;
-        _scrollPos+=_SCROLL_PX_PER_SEC*delta;
-        if(_scrollPos>=feed.scrollHeight-feed.clientHeight){
-          _scrollPos=0;
-        }
-        feed.scrollTop=_scrollPos;
-      }
-      last=ts;
-    } else {
-      last=null;
-    }
-    _scrollRaf=requestAnimationFrame(step);
-  }
-  _scrollRaf=requestAnimationFrame(step);
+  if(!feed||!feed.children.length)return;
+
+  const items=Array.from(feed.children);
+  const track=document.createElement('div');
+  track.className='nft';
+  items.forEach(el=>track.appendChild(el));
+  items.forEach(el=>track.appendChild(el.cloneNode(true)));
+  feed.innerHTML='';
+  feed.appendChild(track);
+  _scrollTrack=track;
+  _scrollClone=null;
+  _scrollPos=0;
+  _scrollPaused=false;
+
+  requestAnimationFrame(()=>_nftApplyAnim(track,0));
 }
 
 async function loadNews(){
@@ -296,21 +300,45 @@ async function loadNews(){
     buildFilters();renderNews(allNews);injectTickerNews(allNews);
     const feed=document.getElementById("news-feed");
     if(feed){
-      feed.addEventListener("mouseenter",()=>{_scrollPaused=true;});
-      feed.addEventListener("mouseleave",()=>{_scrollPaused=false;});
+      feed.addEventListener("mouseenter",()=>{
+        if(!_scrollTrack)return;
+        const m=new DOMMatrix(getComputedStyle(_scrollTrack).transform);
+        _scrollPos=Math.max(0,-m.m42);
+        _scrollTrack.style.animation='none';
+        _scrollTrack.style.transform=`translateY(${-_scrollPos}px)`;
+        _scrollPaused=true;
+      });
+      feed.addEventListener("mouseleave",()=>{
+        if(!_scrollTrack)return;
+        _scrollPaused=false;
+        _scrollTrack.style.transform='';
+        _nftApplyAnim(_scrollTrack,_scrollPos);
+      });
+      feed.addEventListener("wheel",e=>{
+        if(!_scrollPaused||!_scrollTrack)return;
+        e.preventDefault();
+        const halfH=_scrollTrack.scrollHeight/2;
+        _scrollPos=((_scrollPos+e.deltaY*0.6)%halfH+halfH)%halfH;
+        _scrollTrack.style.transform=`translateY(${-_scrollPos}px)`;
+      },{passive:false});
     }
     _startAutoscroll();
   }catch{document.getElementById("news-feed").innerHTML=`<div class="ni"><span class="nt">Error al cargar noticias</span></div>`}
 }
+const AGRO_OUTLETS=new Set(["ABC Rural","Valor Agro"]);
 function buildFilters(){
-  const outlets=["Todos",...new Set(allNews.map(n=>n.outlet))];
-  document.getElementById("news-filter").innerHTML=outlets.map(o=>`<button class="fbtn ${o===activeFilter?"active":""}" onclick="filterNews('${o}')">${o}</button>`).join("");
+  const outlets=["Todos",...new Set(allNews.filter(n=>!n.agro).map(n=>n.outlet))];
+  const hasAgro=allNews.some(n=>n.agro);
+  const btns=outlets.map(o=>`<button class="fbtn ${o===activeFilter?"active":""}" onclick="filterNews('${o}')">${o}</button>`).join("");
+  const agroBtn=hasAgro?`<button class="fbtn fbtn--agro ${activeFilter==="Agro"?"active":""}" onclick="filterNews('Agro')">Agro</button>`:"";
+  document.getElementById("news-filter").innerHTML=btns+agroBtn;
 }
 function filterNews(o){
   activeFilter=o;buildFilters();
-  renderNews(o==="Todos"?allNews:allNews.filter(n=>n.outlet===o));
-  const feed=document.getElementById("news-feed");
-  if(feed){feed.scrollTop=0;_scrollPos=0;}
+  const items=o==="Todos"?allNews:o==="Agro"?allNews.filter(n=>n.agro):allNews.filter(n=>n.outlet===o&&!n.agro);
+  renderNews(items);
+  _scrollPos=0;
+  _startAutoscroll();
 }
 function renderNews(items){
   document.getElementById("news-feed").innerHTML=items.map(n=>`
@@ -327,7 +355,7 @@ async function loadSummary(force=false){
     const url="/api/summary"+(force?"?force=1":"");
     const r=await(await fetch(url)).json();
     if(t){
-      const TAG_LBL={pol:"Política",eco:"Economía",fx:"Divisas",py:"Paraguay",mkt:"Mercados"};
+      const TAG_LBL={pol:"Política",eco:"Economía",fx:"Divisas",py:"Paraguay",mkt:"Mercados",agro:"Agro"};
       const points=Array.isArray(r.summary)?r.summary:[{text:r.summary,sentiment:"flat",tag:""}];
       t.innerHTML=points.map(p=>{
         const key=(p.tag||"").toLowerCase();
@@ -336,7 +364,7 @@ async function loadSummary(force=false){
         return `<li class="sum-item">${badge}<span class="sum-text">${p.text}</span></li>`;
       }).join("");
     }
-    if(d)d.textContent=(r.cached?"Guardado":"Generado")+" · "+r.date;
+    if(d)d.textContent="";
   }catch{if(t)t.textContent="Error al generar el resumen."}
 }
 async function refreshSummary(){
@@ -365,13 +393,157 @@ async function refreshAll(){
   updateTime();
 }
 
+// ── Dashboard scaling ─────────────────────────────────────
+(function(){
+  const BASE_W  = 1440;
+  const HEADER_H = 44;
+  const MKT_H    = 28;
+  function fit(){
+    const grid = document.querySelector('.grid');
+    if(!grid) return;
+    const availH = window.innerHeight - HEADER_H - MKT_H;
+    const scale  = window.innerWidth / BASE_W;
+    grid.style.width           = BASE_W + 'px';
+    grid.style.height          = Math.round(availH / scale) + 'px';
+    grid.style.transform       = `scale(${scale})`;
+    grid.style.transformOrigin = 'top left';
+    grid.style.zoom            = '';
+  }
+  fit();
+  window.addEventListener('resize', fit);
+})();
+
 if(document.getElementById('rates-list')){
   (async()=>{
     await refreshAll();
     loadSummary();
     setInterval(loadNews,3*60*1000);
-    setInterval(()=>{loadCrypto();loadUSMarkets();},30*1000);          // rápidos: crypto + índices
-    setInterval(()=>{loadRates();loadCommodities();},60*1000);         // medios: divisas + commodities
-    setInterval(loadEconomic,15*60*1000);                              // lentos: macro PY
+    setInterval(()=>{loadCrypto();loadUSMarkets();},30*1000);
+    setInterval(()=>{loadRates();loadCommodities();},60*1000);
+    setInterval(loadEconomic,15*60*1000);
   })();
 }
+
+// ── Weather widget ────────────────────────────────────────
+(function(){
+  const CITIES=[
+    {name:"Asunción",  flag:"🇵🇾", lat:-25.2867, lon:-57.6470},
+    {name:"Miami",     flag:"🇺🇸", lat: 25.7617, lon:-80.1918},
+    {name:"Orlando",   flag:"🇺🇸", lat: 28.5383, lon:-81.3792},
+    {name:"B. Aires",  flag:"🇦🇷", lat:-34.6037, lon:-58.3816},
+    {name:"Lawrence",  flag:"🇺🇸", lat: 38.9717, lon:-95.2353},
+  ];
+
+  function wmoIcon(code,wind){
+    if(code===0)  return wind>25?"☀️":"☀️";
+    if(code<=2)   return"🌤️";
+    if(code<=3)   return"⛅";
+    if(code<=48)  return"☁️";
+    if(code<=55)  return"🌦️";
+    if(code<=65)  return"🌧️";
+    if(code<=75)  return"🌨️";
+    if(code<=82)  return"🌧️";
+    return"⛈️";
+  }
+  function wmoLabel(code,wind){
+    if(code===0)  return wind>25?"Viento":"Despejado";
+    if(code<=2)   return"Mayormente despejado";
+    if(code<=3)   return"Parcial nublado";
+    if(code<=48)  return"Nublado";
+    if(code<=55)  return"Llovizna";
+    if(code<=65)  return"Lluvia";
+    if(code<=75)  return"Nieve";
+    if(code<=82)  return"Lluvias";
+    return"Tormenta";
+  }
+
+  let _data=[];
+  let _idx=0;
+
+  async function fetchWeather(){
+    const results=await Promise.all(CITIES.map(async c=>{
+      try{
+        const url=`https://api.open-meteo.com/v1/forecast?latitude=${c.lat}&longitude=${c.lon}&current=temperature_2m,weather_code,wind_speed_10m&wind_speed_unit=kmh&timezone=auto`;
+        const r=await(await fetch(url)).json();
+        const cur=r.current;
+        return {...c,temp:Math.round(cur.temperature_2m),code:cur.weather_code,wind:Math.round(cur.wind_speed_10m)};
+      }catch{return{...c,temp:null};}
+    }));
+    _data=results.filter(r=>r.temp!==null);
+  }
+
+  function render(){
+    const el=document.getElementById("weather-widget");
+    if(!el||!_data.length)return;
+    const c=_data[_idx%_data.length];
+    const icon=wmoIcon(c.code,c.wind);
+    const label=wmoLabel(c.code,c.wind);
+    el.innerHTML=`<span class="ww-inner ww-anim">${c.flag} ${c.name} · ${icon} ${c.temp}°C · ${label}</span>`;
+    // remove and re-add class to restart animation
+    const inner=el.querySelector('.ww-inner');
+    void inner.offsetWidth;
+  }
+
+  function cycle(){
+    _idx=(_idx+1)%(_data.length||1);
+    render();
+  }
+
+  fetchWeather().then(()=>{
+    render();
+    setInterval(cycle,4500);
+    setInterval(fetchWeather,10*60*1000); // refresh weather every 10 min
+  });
+})();
+
+// ── Card divider resize ───────────────────────────────────
+(function(){
+  const divider=document.querySelector('.card-divider');
+  if(!divider)return;
+  const card=divider.closest('.card--tall');
+  if(!card)return;
+  const halves=card.querySelectorAll('.card-half');
+  const newsPanel=halves[1];
+
+  let dragging=false,startY=0,startTopPct=50,hasMoved=false;
+
+  function _getScale(){
+    return parseFloat(document.querySelector('.grid').style.transform.match(/scale\(([^)]+)\)/)?.[1]||1);
+  }
+
+  function _setTop(pct){
+    newsPanel.style.top=pct+'%';
+    divider.style.top='calc('+pct+'% - 3px)';
+  }
+
+  divider.addEventListener('mousedown',e=>{
+    e.preventDefault();
+    dragging=true;
+    hasMoved=false;
+    startY=e.clientY;
+    startTopPct=parseFloat(newsPanel.style.top)||50;
+    divider.classList.add('dragging');
+    document.body.style.cursor='ns-resize';
+    document.body.style.userSelect='none';
+  });
+
+  document.addEventListener('mousemove',e=>{
+    if(!dragging)return;
+    const dy=(e.clientY-startY)/_getScale();
+    if(!hasMoved&&Math.abs(dy)<3)return;
+    hasMoved=true;
+    const cardH=card.getBoundingClientRect().height/_getScale();
+    const dyPct=(dy/cardH)*100;
+    // Only allow dragging upward from 50% (min ~10%)
+    const newPct=Math.min(50,Math.max(10,startTopPct+dyPct));
+    _setTop(newPct);
+  });
+
+  document.addEventListener('mouseup',()=>{
+    if(!dragging)return;
+    dragging=false;
+    divider.classList.remove('dragging');
+    document.body.style.cursor='';
+    document.body.style.userSelect='';
+  });
+})();

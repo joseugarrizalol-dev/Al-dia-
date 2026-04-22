@@ -194,6 +194,7 @@ def _build_summary(news: list, market_data: dict | None = None) -> list:
     political = [n for n in news if _classify(n["title"]) in ("political", "both")]
     economic  = [n for n in news if _classify(n["title"]) in ("economic",  "both")]
     fx        = [n for n in news if any(kw in n["title"].lower() for kw in FX_KW)]
+    agro      = [n for n in news if n.get("agro")]
     figures   = _extract_figures(t_all)
 
     # News with concrete numbers get priority for the figures slot
@@ -230,21 +231,22 @@ def _build_summary(news: list, market_data: dict | None = None) -> list:
         if _add(n):
             break
 
-    # Slot 4 — Cifras del día (figures extracted from all headlines)
-    if figures:
-        fig_text = f"Cifras del día: {' · '.join(figures[:4])}."
-        points.append({"text": fig_text, "sentiment": "flat", "tag": "PY"})
-    else:
-        for n in news:
-            if len(points) >= 4:
-                break
-            _add(n)
+    # Slot 4 — Additional headline (economic > political > any)
+    for n in (economic + political + news):
+        if len(points) >= 4:
+            break
+        _add(n)
 
     # Slot 5 — Any remaining headline not yet used (priority: economic > political > other)
     for n in (economic + political + news):
         if len(points) >= 5:
             break
         _add(n)
+
+    # Slot agro — one agro headline if available
+    for n in agro:
+        if _add(n, "AGRO"):
+            break
 
     # Inject market mover if available
     if market_data:

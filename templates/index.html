@@ -68,7 +68,7 @@
   <div class="card" id="c-divisas">
     <div class="card-hd">
       <span class="card-title">Tipo de Cambio</span>
-      <span class="card-src">Maxicambios</span>
+      <span class="card-src" data-tooltip="Actualiza cada 60s">Maxicambios</span>
     </div>
     <div class="card-body" id="rates-list">
       <div class="sk"></div><div class="sk"></div><div class="sk"></div><div class="sk"></div>
@@ -79,7 +79,7 @@
   <div class="card" id="c-cripto">
     <div class="card-hd">
       <span class="card-title">Criptomonedas</span>
-      <span class="card-src">CoinGecko</span>
+      <span class="card-src" data-tooltip="Actualiza cada 30s">CoinGecko</span>
     </div>
     <div class="card-body" id="crypto-list">
       <div class="sk"></div><div class="sk"></div><div class="sk"></div>
@@ -90,7 +90,7 @@
   <div class="card" id="c-tasas">
     <div class="card-hd">
       <span class="card-title">Tasas USA</span>
-      <span class="card-src">NY Fed · Yahoo</span>
+      <span class="card-src" data-tooltip="Actualiza cada 30s">NY Fed · Yahoo</span>
     </div>
     <div class="card-body" id="rates-us-list">
       <div class="sk"></div><div class="sk"></div><div class="sk"></div><div class="sk"></div><div class="sk"></div>
@@ -103,7 +103,7 @@
     <div class="card-half">
       <div class="card-hd">
         <span class="card-title"><span id="hd-greeting"></span></span>
-        <span class="card-src">Análisis automático</span>
+        <div id="weather-widget" class="weather-widget"></div>
         <button class="btn-regen" id="summary-btn" onclick="refreshSummary()" title="Regenerar">↻</button>
       </div>
       <div class="summary-box">
@@ -117,7 +117,7 @@
     <div class="card-half">
       <div class="card-hd card-hd--inner">
         <span class="card-title"><span class="live-dot"></span>Ciclo de Noticias en Vivo</span>
-        <span class="card-src">Política · Economía · Finanzas</span>
+        <span class="card-src" data-tooltip="Actualiza cada 3 min">Política · Economía · Finanzas</span>
       </div>
       <div class="news-filter" id="news-filter"></div>
       <div class="news-feed" id="news-feed">
@@ -131,7 +131,7 @@
   <div class="card" id="c-macro">
     <div class="card-hd">
       <span class="card-title">Macro Paraguay</span>
-      <span class="card-src">BCP · FMI · S&amp;P · Moody's</span>
+      <span class="card-src" data-tooltip="Actualiza cada 15 min">BCP · FMI · S&amp;P · Moody's</span>
     </div>
     <div class="card-body" id="economic-list">
       <div class="sk"></div><div class="sk"></div><div class="sk"></div>
@@ -142,7 +142,7 @@
   <div class="card" id="c-commodities">
     <div class="card-hd">
       <span class="card-title">Commodities</span>
-      <span class="card-src">Yahoo Finance</span>
+      <span class="card-src" data-tooltip="Actualiza cada 60s">Yahoo Finance</span>
     </div>
     <div class="card-body" id="commodities-list">
       <div class="sk"></div><div class="sk"></div><div class="sk"></div>
@@ -154,7 +154,7 @@
   <div class="card" id="c-indices">
     <div class="card-hd">
       <span class="card-title">Índices</span>
-      <span class="card-src">Yahoo Finance</span>
+      <span class="card-src" data-tooltip="Actualiza cada 30s">Yahoo Finance</span>
     </div>
     <div class="card-body" id="indexes-list">
       <div class="sk"></div><div class="sk"></div><div class="sk"></div><div class="sk"></div>
