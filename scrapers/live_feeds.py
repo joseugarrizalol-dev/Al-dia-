@@ -60,14 +60,18 @@ def debug_fetch(slug: str) -> dict:
             headers=_HEADERS, cookies=_COOKIES, timeout=10,
         )
         match = _CANONICAL_RE.search(r.text)
+        idx = r.text.find('rel="canonical"')
+        canonical_ctx = r.text[max(0, idx - 30):idx + 150] if idx != -1 else None
         return {
-            "status_code":    r.status_code,
-            "final_url":      r.url,
-            "html_length":    len(r.text),
-            "has_canonical":  bool(match),
-            "video_id":       match.group(1) if match else None,
-            "mentions_consent": "consent" in r.text.lower(),
-            "snippet_head":   r.text[:800],
+            "status_code":      r.status_code,
+            "final_url":        r.url,
+            "html_length":      len(r.text),
+            "has_canonical":    bool(match),
+            "video_id":         match.group(1) if match else None,
+            "canonical_found_raw": idx != -1,
+            "canonical_context": canonical_ctx,
+            "has_watch_param":  "watch?v=" in r.text,
+            "is_live_marker":   '"isLive":true' in r.text or '"style":"LIVE"' in r.text,
         }
     except Exception as e:
         return {"error": str(e)}
