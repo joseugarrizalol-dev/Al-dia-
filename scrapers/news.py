@@ -285,11 +285,12 @@ def get_news() -> list:
         tasks.append(ex.submit(_scrape_abc_rural))
         buckets = [f.result() for f in as_completed(tasks)]
 
-    # Separate agro buckets from general, preserve per-outlet structure for interleave
+    # Intercalar agro junto con el resto de los buckets (no pegarlo aparte al
+    # final) para que no queden tandas largas de puro Valor Agro/Rurales.
     agro_buckets    = [b for b in buckets if b and b[0].get("agro")]
     general_buckets = [b for b in buckets if b and not b[0].get("agro")]
-    mixed       = _interleave(general_buckets)
-    mixed_agro  = _interleave(agro_buckets)
-    result = (mixed if mixed else DEMO_NEWS) + mixed_agro
+    if not general_buckets:
+        general_buckets = [DEMO_NEWS]
+    result = _interleave(general_buckets + agro_buckets)
     _cache.set("news", result, 180)
     return result
