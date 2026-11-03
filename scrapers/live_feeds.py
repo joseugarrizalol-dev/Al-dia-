@@ -10,7 +10,12 @@ CHANNELS = {
     "rockandpop": {"name": "Rock & Pop",       "source": "FM 95.5",   "channel_id": "UCFii8hQ3sYpusp-8r_DmGeg"},
 }
 
-_YT_VIDEO_ID_RE = re.compile(r'"videoId":"([a-zA-Z0-9_-]{11})"')
+#  El <link rel="canonical"> es la fuente confiable del video actual del
+#  canal: si no está en vivo, canoniza a la página del canal (sin "watch?v=")
+#  en vez de a un video al azar. Un regex genérico de "videoId" en el HTML
+#  puede matchear cualquiera de las decenas de IDs de videos recomendados/
+#  relacionados que trae la página — eso rompía la resolución en producción.
+_CANONICAL_RE = re.compile(r'<link rel="canonical" href="https://www\.youtube\.com/watch\?v=([a-zA-Z0-9_-]{11})"')
 _HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
 
 
@@ -20,7 +25,7 @@ def _resolve_youtube(slug, info):
             f"https://www.youtube.com/channel/{info['channel_id']}/live",
             headers=_HEADERS, timeout=6,
         )
-        match = _YT_VIDEO_ID_RE.search(r.text)
+        match = _CANONICAL_RE.search(r.text)
         video_id = match.group(1) if match else None
     except Exception:
         video_id = None
