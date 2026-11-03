@@ -85,4 +85,6 @@ function setRightMode(mode) {
   }
 }
 
-_renderChannelSelect2();
+// Por default la columna derecha abre en "Transmisión en vivo" (el <select>
+// del HTML ya trae esa opción seleccionada) — arranca el 2do reproductor.
+setRightMode(document.getElementById("right-mode-select").value);
