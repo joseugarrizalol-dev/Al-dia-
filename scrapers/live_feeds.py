@@ -1,4 +1,4 @@
-import re
+import os
 import requests
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from scrapers import _cache
@@ -10,32 +10,32 @@ CHANNELS = {
     "rockandpop": {"name": "Rock & Pop",       "source": "FM 95.5",   "channel_id": "UCFii8hQ3sYpusp-8r_DmGeg"},
 }
 
-#  El <link rel="canonical"> es la fuente confiable del video actual del
-#  canal: si no está en vivo, canoniza a la página del canal (sin "watch?v=")
-#  en vez de a un video al azar. Un regex genérico de "videoId" en el HTML
-#  puede matchear cualquiera de las decenas de IDs de videos recomendados/
-#  relacionados que trae la página — eso rompía la resolución en producción.
-_CANONICAL_RE = re.compile(r'<link rel="canonical" href="https://www\.youtube\.com/watch\?v=([a-zA-Z0-9_-]{11})"')
-_HEADERS = {
-    "User-Agent":      "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-    "Accept-Language": "es-PY,es;q=0.9,en;q=0.8",
-}
-# Sin esta cookie, YouTube le sirve a IPs de datacenter (como las de Render)
-# una interstitial de consentimiento de cookies en vez de la página real,
-# que no trae el <link rel="canonical"> con el video en vivo.
-_COOKIES = {"CONSENT": "YES+cb.20240101-00-p0.es+FX+100"}
+_YOUTUBE_API_KEY = os.environ.get("YOUTUBE_API_KEY")
+_SEARCH_URL = "https://www.googleapis.com/youtube/v3/search"
+
+# search.list con eventType=live cuesta 100 unidades de cuota por llamada.
+# Con 4 canales y la cuota gratis (10,000/día), el techo real son ~24
+# refrescos/día → se cachea 1 hora para no pasarnos.
+_CACHE_TTL = 3600
 
 
 def _resolve_youtube(slug, info):
-    try:
-        r = requests.get(
-            f"https://www.youtube.com/channel/{info['channel_id']}/live",
-            headers=_HEADERS, cookies=_COOKIES, timeout=6,
-        )
-        match = _CANONICAL_RE.search(r.text)
-        video_id = match.group(1) if match else None
-    except Exception:
-        video_id = None
+    video_id = None
+    if _YOUTUBE_API_KEY:
+        try:
+            r = requests.get(_SEARCH_URL, params={
+                "part":       "snippet",
+                "channelId":  info["channel_id"],
+                "eventType":  "live",
+                "type":       "video",
+                "maxResults": 1,
+                "key":        _YOUTUBE_API_KEY,
+            }, timeout=8)
+            items = r.json().get("items", [])
+            if items:
+                video_id = items[0]["id"]["videoId"]
+        except Exception:
+            video_id = None
 
     embed_url = f"https://www.youtube.com/embed/{video_id}?autoplay=0" if video_id else None
     fallback_url = f"https://www.youtube.com/channel/{info['channel_id']}/live"
@@ -49,46 +49,18 @@ def _resolve_youtube(slug, info):
     }
 
 
-def debug_fetch(slug: str) -> dict:
-    """Diagnóstico temporal: qué le responde YouTube al servidor para un canal."""
-    info = CHANNELS.get(slug)
-    if not info:
-        return {"error": f"canal desconocido: {slug}"}
-    try:
-        r = requests.get(
-            f"https://www.youtube.com/channel/{info['channel_id']}/live",
-            headers=_HEADERS, cookies=_COOKIES, timeout=10,
-        )
-        match = _CANONICAL_RE.search(r.text)
-        idx = r.text.find('rel="canonical"')
-        canonical_ctx = r.text[max(0, idx - 30):idx + 150] if idx != -1 else None
-        return {
-            "status_code":      r.status_code,
-            "final_url":        r.url,
-            "html_length":      len(r.text),
-            "has_canonical":    bool(match),
-            "video_id":         match.group(1) if match else None,
-            "canonical_found_raw": idx != -1,
-            "canonical_context": canonical_ctx,
-            "has_watch_param":  "watch?v=" in r.text,
-            "is_live_marker":   '"isLive":true' in r.text or '"style":"LIVE"' in r.text,
-        }
-    except Exception as e:
-        return {"error": str(e)}
-
-
 def get_live_feeds() -> dict:
     cached = _cache.get("live_feeds")
     if cached is not None:
         return cached
 
     feeds = {}
-    with ThreadPoolExecutor(max_workers=3) as ex:
+    with ThreadPoolExecutor(max_workers=4) as ex:
         tasks = [ex.submit(_resolve_youtube, slug, info) for slug, info in CHANNELS.items()]
         for f in as_completed(tasks):
             slug, result = f.result()
             feeds[slug] = result
 
     ordered = {slug: feeds[slug] for slug in CHANNELS if slug in feeds}
-    _cache.set("live_feeds", ordered, 300)
+    _cache.set("live_feeds", ordered, _CACHE_TTL)
     return ordered
