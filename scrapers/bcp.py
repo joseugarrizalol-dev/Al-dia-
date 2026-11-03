@@ -1,10 +1,18 @@
-import re
-import requests
-from bs4 import BeautifulSoup
+import yfinance as yf
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from scrapers import _cache
 
-URL = "https://www.maxicambios.com.py"
-HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+# Direct PYG pairs (available on Yahoo Finance)
+DIRECT_PAIRS = {
+    "USD": "USDPYG=X",
+    "EUR": "EURPYG=X",
+}
+
+# Cross-rate pairs: calculated as USDPYG / USD{code}
+CROSS_PAIRS = {
+    "BRL": "USDBRL=X",
+    "ARS": "USDARS=X",
+}
 
 DEMO_RATES = {
     "USD": {"buy": 7280, "sell": 7320, "change": "—"},
@@ -13,90 +21,46 @@ DEMO_RATES = {
     "ARS": {"buy": 7.2,  "sell": 7.5,  "change": "—"},
 }
 
-# Map flag filename / currency name to standard code
-_CODE_MAP = {
-    "USD": "USD", "DOLAR": "USD", "DÓLAR": "USD",
-    "EUR": "EUR", "EURO": "EUR",
-    "BRL": "BRL", "REAL": "BRL",
-    "ARS": "ARS", "PESO": "ARS",
-}
 
-WANT = {"USD", "EUR", "BRL", "ARS"}
+def _pct(current, past):
+    if not past or past == 0:
+        return "—"
+    val = ((current - past) / past) * 100
+    return f"{'+' if val >= 0 else ''}{val:.2f}%"
 
 
-def _to_float(s: str) -> float:
-    return float(s.replace(".", "").replace(",", ".").strip())
+def _fetch_direct(code, ticker_sym):
+    try:
+        hist = yf.Ticker(ticker_sym).history(period="1mo")
+        if hist.empty:
+            return code, None
+        current = float(hist["Close"].iloc[-1])
+        month_ago = float(hist["Close"].iloc[0])
+        spread = current * 0.005
+        return code, {
+            "buy":    round(current - spread, 2),
+            "sell":   round(current, 2),
+            "change": _pct(current, month_ago),
+        }
+    except Exception:
+        return code, None
 
 
-def _via_soup(soup) -> dict:
-    """
-    Strategy A: walk the DOM looking for flag <img> tags.
-    The first occurrence of each currency is the Asunción branch rate.
-    """
-    rates = {}
-    seen = set()
-
-    for img in soup.find_all("img", src=True):
-        src: str = img["src"]
-        if "flags/" not in src:
-            continue
-        fname = src.split("/")[-1].upper().replace(".PNG", "").replace(".JPG", "")
-        code = _CODE_MAP.get(fname)
-        if not code or code in seen or code not in WANT:
-            continue
-
-        # Walk up to a container that holds Compra + Venta text
-        node = img.parent
-        for _ in range(8):
-            txt = node.get_text(" ", strip=True)
-            if re.search(r'[Cc]ompra', txt) and re.search(r'[Vv]enta', txt):
-                buy  = re.search(r'[Cc]ompra\D{0,30}?(\d[\d.]+)', txt)
-                sell = re.search(r'[Vv]enta\D{0,30}?(\d[\d.]+)', txt)
-                if buy and sell:
-                    try:
-                        rates[code] = {
-                            "buy":    _to_float(buy.group(1)),
-                            "sell":   _to_float(sell.group(1)),
-                            "change": "—",
-                        }
-                        seen.add(code)
-                    except ValueError:
-                        pass
-                break
-            if node.parent:
-                node = node.parent
-            else:
-                break
-
-    return rates
-
-
-def _via_text(html: str) -> dict:
-    """
-    Strategy B: regex over raw HTML text — find flag src, then
-    the first compra/venta pair that follows within ~600 chars.
-    """
-    rates = {}
-    for code, aliases in [
-        ("USD", ["USD"]),
-        ("EUR", ["EUR"]),
-        ("BRL", ["BRL"]),
-        ("ARS", ["ARS"]),
-    ]:
-        for alias in aliases:
-            pattern = rf'flags/{alias}\.png[^<]{{0,600}}?[Cc]ompra\D{{0,30}}?(\d[\d.]+)\D{{0,30}}?[Vv]enta\D{{0,30}}?(\d[\d.]+)'
-            m = re.search(pattern, html, re.DOTALL | re.IGNORECASE)
-            if m:
-                try:
-                    rates[code] = {
-                        "buy":    _to_float(m.group(1)),
-                        "sell":   _to_float(m.group(2)),
-                        "change": "—",
-                    }
-                    break
-                except ValueError:
-                    pass
-    return rates
+def _fetch_cross(code, cross_sym, usd_pyg_hist):
+    try:
+        cross_hist = yf.Ticker(cross_sym).history(period="1mo")
+        if cross_hist.empty or usd_pyg_hist.empty:
+            return code, None
+        current = float(usd_pyg_hist["Close"].iloc[-1]) / float(cross_hist["Close"].iloc[-1])
+        month_ago = float(usd_pyg_hist["Close"].iloc[0]) / float(cross_hist["Close"].iloc[0])
+        spread = current * 0.005
+        return code, {
+            "buy":    round(current - spread, 2),
+            "sell":   round(current, 2),
+            "change": _pct(current, month_ago),
+        }
+    except Exception:
+        return code, None
 
 
 def get_rates() -> dict:
@@ -104,24 +68,28 @@ def get_rates() -> dict:
     if cached is not None:
         return cached
 
+    rates = {}
+
     try:
-        res = requests.get(URL, headers=HEADERS, timeout=10)
-        res.raise_for_status()
-        html = res.text
-        soup = BeautifulSoup(html, "html.parser")
+        usd_hist = yf.Ticker("USDPYG=X").history(period="1mo")
 
-        rates = _via_soup(soup)
-        if len(rates) < 2:
-            rates = _via_text(html)
-
-        # Fill missing currencies from demo so the UI never breaks
-        for k, v in DEMO_RATES.items():
-            if k not in rates:
-                rates[k] = v
-
-        final = rates if rates else DEMO_RATES
-        _cache.set("rates", final, 120)
-        return final
-
+        tasks = {}
+        with ThreadPoolExecutor(max_workers=6) as ex:
+            for code, sym in DIRECT_PAIRS.items():
+                tasks[ex.submit(_fetch_direct, code, sym)] = code
+            for code, sym in CROSS_PAIRS.items():
+                tasks[ex.submit(_fetch_cross, code, sym, usd_hist)] = code
+            for f in as_completed(tasks):
+                code, result = f.result()
+                if result:
+                    rates[code] = result
     except Exception:
-        return DEMO_RATES
+        pass
+
+    for k, v in DEMO_RATES.items():
+        if k not in rates:
+            rates[k] = v
+
+    final = rates if rates else DEMO_RATES
+    _cache.set("rates", final, 60)
+    return final

@@ -4,19 +4,19 @@ from scrapers import _cache
 
 # ── Static data (BCP policy rates, ratings — change infrequently) ──────────
 STATIC = {
-    "rating_sp":  {"label": "Rating S&P",        "value": "BB",    "unit": "",    "year": "S&P"},
     "rating_mdy": {"label": "Rating Moody's",     "value": "Ba1",   "unit": "",    "year": "Moody's"},
     "tpm":        {"label": "TPM · BCP",          "value": "6,00",  "unit": "%",   "year": "BCP"},
-    "reservas":   {"label": "Reservas intern.",   "value": "10,1",  "unit": "B USD","year": "BCP"},
-    "deuda_ext":  {"label": "Deuda externa",      "value": "29,9",  "unit": "B USD","year": "FMI"},
+    "reservas":   {"label": "Reservas intern.",   "value": "10,1",  "unit": "bil. USD","year": "BCP"},
+    "deuda_ext":  {"label": "Deuda externa",      "value": "29,9",  "unit": "bil. USD","year": "FMI"},
 }
 
 # ── IMF WEO fallback values (April 2025 edition) ────────────────────────────
 DEMO_IMF = {
-    "pib_crec":  {"label": "Crec. PIB 2025",   "value": "6,0", "unit": "%",    "year": "FMI"},
-    "pib_nom":   {"label": "PIB nominal",       "value": "45,0","unit": "B USD","year": "FMI"},
-    "inflacion": {"label": "Inflación 2025",    "value": "3,8", "unit": "%",    "year": "FMI"},
-    "desempleo": {"label": "Desempleo 2026",    "value": "5,2", "unit": "%",    "year": "FMI"},
+    "pib_crec":      {"label": "Crec. PIB",      "value": "6,0",  "unit": "%",    "year": "FMI"},
+    "pib_nom":       {"label": "PIB nominal",     "value": "45,0", "unit": "B USD","year": "FMI"},
+    "inflacion":     {"label": "Inflación",       "value": "3,8",  "unit": "%",    "year": "FMI"},
+    "desempleo":     {"label": "Desempleo",       "value": "5,2",  "unit": "%",    "year": "FMI"},
+    "deficit_fiscal":{"label": "Déficit fiscal",  "value": "-1,8", "unit": "%",   "year": "FMI"},
 }
 
 IMF_BASE = "https://www.imf.org/external/datamapper/api/v1"
@@ -51,16 +51,18 @@ def get_economic() -> dict:
         return cached
 
     indicators = [
-        ("NGDP_RPCH", 2025, "pib_crec",  "Crec. PIB",  "%",     "pib_crec"),
-        ("NGDPD",     2025, "pib_nom",   "PIB nominal", "B USD", "pib_nom"),
-        ("PCPIPCH",   2025, "inflacion", "Inflación",   "%",     "inflacion"),
-        ("LUR",       2026, "desempleo", "Desempleo",   "%",     "desempleo"),
+        ("NGDP_RPCH",    2025, "pib_crec",      "Crec. PIB",     "%",     "pib_crec"),
+        ("NGDPD",        2025, "pib_nom",        "PIB nominal",   "B USD", "pib_nom"),
+        ("PCPIPCH",      2025, "inflacion",      "Inflación",     "%",     "inflacion"),
+        ("LUR",          2026, "desempleo",      "Desempleo",     "%",     "desempleo"),
+        ("GGXCNL_NGDP",  2025, "deficit_fiscal", "Déficit fiscal","%",     "deficit_fiscal"),
     ]
 
     def _fetch(ind, yr, key, label, unit, demo_key):
         val, actual_yr = _imf_latest(ind, prefer_year=yr)
         if val is not None:
-            return key, {"label": label, "value": _fmt(val), "unit": unit, "year": f"FMI {actual_yr}"}
+            fmt_val = (f"+{_fmt(val)}" if val > 0 else _fmt(val)) if key == "deficit_fiscal" else _fmt(val)
+            return key, {"label": label, "value": fmt_val, "unit": unit, "year": f"FMI {actual_yr}"}
         return key, DEMO_IMF[demo_key]
 
     result = {}

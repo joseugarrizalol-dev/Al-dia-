@@ -2,17 +2,17 @@ import requests
 from scrapers import _cache
 
 DEMO_CRYPTO = {
-    "bitcoin":  {"usd": 67500, "name": "Bitcoin",  "symbol": "BTC", "change_24h": "+2.3%"},
-    "ethereum": {"usd": 3520,  "name": "Ethereum", "symbol": "ETH", "change_24h": "+1.8%"},
-    "tether":   {"usd": 1.00,  "name": "Tether",   "symbol": "USDT","change_24h": "0.0%"},
-    "solana":   {"usd": 165.0, "name": "Solana",   "symbol": "SOL", "change_24h": "+3.1%"},
-    "binancecoin": {"usd": 580.0, "name": "BNB",   "symbol": "BNB", "change_24h": "+0.9%"},
+    "bitcoin":     {"usd": 67500, "name": "Bitcoin",  "symbol": "BTC", "change_1y": "+120.0%"},
+    "ethereum":    {"usd": 3520,  "name": "Ethereum", "symbol": "ETH", "change_1y": "+80.0%"},
+    "monero":      {"usd": 320.0, "name": "Monero",   "symbol": "XMR", "change_1y": "+60.0%"},
+    "solana":      {"usd": 165.0, "name": "Solana",   "symbol": "SOL", "change_1y": "+200.0%"},
+    "binancecoin": {"usd": 580.0, "name": "BNB",      "symbol": "BNB", "change_1y": "+90.0%"},
 }
 
 COINS = {
     "bitcoin":     ("Bitcoin",  "BTC"),
     "ethereum":    ("Ethereum", "ETH"),
-    "tether":      ("Tether",   "USDT"),
+    "monero":      ("Monero",   "XMR"),
     "solana":      ("Solana",   "SOL"),
     "binancecoin": ("BNB",      "BNB"),
 }
@@ -23,27 +23,34 @@ def get_crypto(usd_pyg_rate=7300):
         return cached
 
     try:
-        url = "https://api.coingecko.com/api/v3/simple/price"
+        url = "https://api.coingecko.com/api/v3/coins/markets"
         params = {
+            "vs_currency": "usd",
             "ids": ",".join(COINS.keys()),
-            "vs_currencies": "usd",
-            "include_24hr_change": "true",
+            "price_change_percentage": "1y",
+            "per_page": 10,
+            "page": 1,
         }
         res = requests.get(url, params=params, timeout=8)
         data = res.json()
 
         result = {}
-        for coin_id, (name, symbol) in COINS.items():
-            if coin_id in data:
-                usd_price = data[coin_id].get("usd", 0)
-                change    = data[coin_id].get("usd_24h_change", 0)
-                result[coin_id] = {
-                    "usd":        round(usd_price, 2),
-                    "pyg":        round(usd_price * usd_pyg_rate),
-                    "name":       name,
-                    "symbol":     symbol,
-                    "change_24h": f"{change:+.2f}%",
-                }
+        for item in data:
+            coin_id = item["id"]
+            if coin_id not in COINS:
+                continue
+            name, symbol = COINS[coin_id]
+            usd_price = item.get("current_price", 0)
+            change_1y = item.get("price_change_percentage_1y_in_currency")
+            chg_str = f"{change_1y:+.2f}%" if change_1y is not None else "—"
+            result[coin_id] = {
+                "usd":      round(usd_price, 2),
+                "pyg":      round(usd_price * usd_pyg_rate),
+                "name":     name,
+                "symbol":   symbol,
+                "change_1y": chg_str,
+            }
+
         final = result if result else DEMO_CRYPTO
         _cache.set("crypto", final, 60)
         return final

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>En Vivo — AL DÍA</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/style.css" />
+  <link rel="stylesheet" href="/static/css/live.css" />
+</head>
+<body>
+
+<div class="live-layout">
+
+<!-- ── HEADER ── -->
+<header class="hdr">
+  <div class="logo">
+    <div class="logo-badge">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+    </div>
+    <div>
+      <div class="logo-text">AL DÍA</div>
+      <div class="logo-sub">Mercados Paraguay</div>
+    </div>
+  </div>
+  <div class="hdr-div"></div>
+  <nav class="hdr-nav">
+    <a href="/" class="nav-a">Mercados</a>
+    <a href="/en-vivo" class="nav-a on">En Vivo</a>
+  </nav>
+</header>
+
+<!-- ── BODY ── -->
+<div class="live-body">
+
+  <!-- Col 1: Transmisiones (1/3) — un solo reproductor grande con pestañas -->
+  <div class="live-player-col">
+    <div class="live-player-top">
+      <div class="live-dot"></div>
+      <span class="live-player-label">Transmisión en vivo</span>
+      <span class="live-player-now" id="live-now">—</span>
+    </div>
+    <div class="live-tabs" id="live-tabs"></div>
+    <div class="live-player-frame" id="live-player-frame">
+      <div class="live-loading">Cargando…</div>
+    </div>
+  </div>
+
+  <!-- Col 2: Ciclo de Noticias en Vivo -->
+  <div class="live-news-col">
+    <div class="news-top">
+      <div class="live-dot"></div>
+      <div class="sec-title">Ciclo de Noticias en Vivo</div>
+      <span class="sec-cd" id="cd-news">—</span>
+      <div class="sec-src">Política · Economía · Finanzas</div>
+    </div>
+    <div class="news-filters" id="news-filter"></div>
+    <div class="news-list" id="news-feed">
+      <div class="sk" style="flex:unset;height:64px"></div>
+      <div class="sk" style="flex:unset;height:64px"></div>
+      <div class="sk" style="flex:unset;height:64px"></div>
+    </div>
+  </div>
+
+  <!-- Col 3: Mercados o 2do reproductor en vivo, a elección -->
+  <div class="live-markets-col">
+    <div class="markets-top">
+      <div class="sec-dot" style="background:var(--cyan)" id="right-mode-dot"></div>
+      <select id="right-mode-select" class="right-mode-select" onchange="setRightMode(this.value)">
+        <option value="prices">Precios</option>
+        <option value="live">Transmisión en vivo</option>
+      </select>
+      <select id="live2-channel-select" class="right-mode-select" style="margin-left:auto" hidden onchange="selectChannel2(this.value)"></select>
+    </div>
+
+    <div id="markets-panel" class="markets-panel">
+      <div class="section">
+        <div class="sec-hd">
+          <div class="sec-dot" style="background:var(--cyan)"></div>
+          <div class="sec-title">Tipo de Cambio</div>
+          <span class="sec-cd" id="cd-rates">—</span>
+          <div class="sec-src">Yahoo Finance · cambio mensual</div>
+        </div>
+        <div class="sec-body" id="rates-list">
+          <div class="sk"></div><div class="sk"></div><div class="sk"></div><div class="sk"></div>
+        </div>
+      </div>
+      <div class="section">
+        <div class="sec-hd">
+          <div class="sec-dot" style="background:var(--amber)"></div>
+          <div class="sec-title">Criptomonedas</div>
+          <span class="sec-cd" id="cd-crypto">—</span>
+          <div class="sec-src">CoinGecko</div>
+        </div>
+        <div class="sec-body" id="crypto-list">
+          <div class="sk"></div><div class="sk"></div><div class="sk"></div>
+        </div>
+      </div>
+      <div class="section">
+        <div class="sec-hd">
+          <div class="sec-dot" style="background:var(--pos)"></div>
+          <div class="sec-title">Índices USA</div>
+          <span class="sec-cd" id="cd-indexes">—</span>
+          <div class="sec-src">Yahoo Finance</div>
+        </div>
+        <div class="sec-body" id="indexes-list">
+          <div class="sk"></div><div class="sk"></div><div class="sk"></div><div class="sk"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="live2-panel" class="live-player-frame" hidden>
+      <div class="live-loading">Cargando…</div>
+    </div>
+  </div>
+
+</div>
+
+</div>
+<script src="/static/js/live.js"></script>
+<script src="/static/js/live-news.js"></script>
+<script src="/static/js/live-markets.js"></script>
+<script src="/static/js/live-player2.js"></script>
+</body>
+</html>

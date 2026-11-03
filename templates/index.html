@@ -1,183 +1,221 @@
 <!DOCTYPE html>
-<html lang="es" data-theme="light">
+<html lang="es">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Al Día — Mercados Paraguay</title>
+  <title>AL DÍA — Mercados Paraguay</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/css/style.css" />
-  <!-- Google Analytics — reemplazá G-XXXXXXXXXX con tu Measurement ID -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
   <script>
     window.dataLayer=window.dataLayer||[];
     function gtag(){dataLayer.push(arguments);}
     gtag('js',new Date());
     gtag('config','G-XXXXXXXXXX');
-    // Google Sheets webhook — pegá tu URL de Apps Script aquí
     window._GS_WEBHOOK='https://script.google.com/macros/s/AKfycbyTI-OiOtDUds1X6KH7pGXNIneKRTwVgN07ROYQV9fxLphtLJy0_hNjvLKIE5KM9pz_LA/exec';
   </script>
 </head>
-<body class="dashboard-page">
+<body>
 
 <!-- ── WELCOME OVERLAY ── -->
 <div class="welcome-overlay" id="welcome-overlay">
   <div class="welcome-box">
-    <span class="logo-text" style="font-size:1.1rem">AL DÍA</span>
-    <p class="welcome-sub">Nombre o nombre de organización</p>
-    <input class="welcome-input" id="welcome-input" type="text"
-           placeholder="Tu nombre o empresa" maxlength="32" autocomplete="off" />
+    <div class="wlc-badge">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+    </div>
+    <span class="wlc-logo">AL DÍA</span>
+    <p class="welcome-sub">Ingresá tu nombre o empresa para continuar</p>
+    <input class="welcome-input" id="welcome-input" type="text" placeholder="Tu nombre o empresa" maxlength="32" autocomplete="off" />
     <button class="welcome-btn" id="welcome-btn" disabled>Ingresar</button>
   </div>
 </div>
 
-<!-- ── HEADER ── -->
-<header>
-  <div class="hd-left">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
-    <div class="logo-slider">
-      <span class="logo-text logo-slide active">AL DÍA</span>
-      <span class="logo-text logo-slide">Tu aliado en la toma de decisiones.</span>
-    </div>
-    <span class="logo-sep"></span>
-    <nav class="hd-nav">
-      <a href="/" class="hd-nav-link hd-nav-link--active">Mercados</a>
-      <a href="/sentinel" class="hd-nav-link">Sentinel</a>
-    </nav>
-  </div>
+<div class="layout">
 
-  <div class="hd-ticker">
+<!-- ── HEADER ── -->
+<header class="hdr">
+  <div class="logo">
+    <div class="logo-badge">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+    </div>
+    <div>
+      <div class="logo-text">AL DÍA</div>
+      <div class="logo-sub">Mercados Paraguay</div>
+    </div>
+  </div>
+  <div class="hdr-div"></div>
+  <nav class="hdr-nav">
+    <a href="/" class="nav-a on">Mercados</a>
+    <a href="/en-vivo" class="nav-a">En Vivo</a>
+  </nav>
+  <div class="hdr-div"></div>
+  <div class="ticker-wrap">
     <div class="ticker-track">
       <span class="ti"><b>USD/PYG</b><span id="t-usd" class="tv">—</span></span>
       <span class="ti"><b>EUR/PYG</b><span id="t-eur" class="tv">—</span></span>
       <span class="ti"><b>BRL/PYG</b><span id="t-brl" class="tv">—</span></span>
+      <span class="ti ti-div">·</span>
       <span class="ti"><b>BTC</b><span id="t-btc" class="tv">—</span></span>
       <span class="ti"><b>ETH</b><span id="t-eth" class="tv">—</span></span>
-      <span class="ti"><b>Oro</b><span id="t-gold" class="tv">—</span></span>
-      <span class="ti"><b>Soja</b><span id="t-soja" class="tv">—</span></span>
+      <span class="ti ti-div">·</span>
       <span class="ti"><b>S&amp;P 500</b><span id="t-sp" class="tv">—</span></span>
+      <span class="ti"><b>NASDAQ</b><span id="t-ndx" class="tv">—</span></span>
+      <span class="ti ti-div">·</span>
+      <span class="ti"><b>ORO</b><span id="t-gold" class="tv">—</span></span>
+      <span class="ti"><b>SOJA</b><span id="t-soja" class="tv">—</span></span>
+      <span class="ti ti-div">·</span>
       <span class="ti"><b>10Y</b><span id="t-10y" class="tv">—</span></span>
+      <span class="ti ti-div">·</span>
       <span class="ti"><b>USD/PYG</b><span id="t-usd2" class="tv">—</span></span>
       <span class="ti"><b>EUR/PYG</b><span id="t-eur2" class="tv">—</span></span>
       <span class="ti"><b>BRL/PYG</b><span id="t-brl2" class="tv">—</span></span>
+      <span class="ti ti-div">·</span>
       <span class="ti"><b>BTC</b><span id="t-btc2" class="tv">—</span></span>
       <span class="ti"><b>ETH</b><span id="t-eth2" class="tv">—</span></span>
-      <span class="ti"><b>Oro</b><span id="t-gold2" class="tv">—</span></span>
-      <span class="ti"><b>Soja</b><span id="t-soja2" class="tv">—</span></span>
+      <span class="ti ti-div">·</span>
       <span class="ti"><b>S&amp;P 500</b><span id="t-sp2" class="tv">—</span></span>
+      <span class="ti"><b>NASDAQ</b><span id="t-ndx2" class="tv">—</span></span>
+      <span class="ti ti-div">·</span>
+      <span class="ti"><b>ORO</b><span id="t-gold2" class="tv">—</span></span>
+      <span class="ti"><b>SOJA</b><span id="t-soja2" class="tv">—</span></span>
+      <span class="ti ti-div">·</span>
       <span class="ti"><b>10Y</b><span id="t-10y2" class="tv">—</span></span>
+      <span class="ti ti-div">·</span>
     </div>
   </div>
-
-  <div class="hd-right">
-<button class="btn-icon" onclick="toggleTheme()" aria-label="Tema">
-      <svg id="theme-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-    </button>
+  <div class="hdr-right">
+    <div class="refresh-block">
+      <span class="refresh-cd" id="refresh-cd">15:00</span>
+      <span class="refresh-lbl">próx. refresh</span>
+    </div>
+    <div class="hdr-div"></div>
+    <div style="display:flex;align-items:center;gap:.4vw">
+      <div class="live-dot"></div>
+      <span class="live-label">En vivo</span>
+    </div>
+    <div class="hdr-div"></div>
+    <div class="clock-block">
+      <div class="clock-t" id="clock-t">—</div>
+      <div class="clock-d" id="clock-d">—</div>
+    </div>
   </div>
 </header>
 
-<!-- ── GRID ── -->
-<div class="grid">
+<!-- ── HERO ── -->
+<div class="hero" id="hero">
+  <div class="hi neu"><div class="hi-label">—</div><div class="hi-val">—</div><div class="hi-bottom"><span class="hi-chg neu">—</span></div></div>
+  <div class="hi neu"><div class="hi-label">—</div><div class="hi-val">—</div><div class="hi-bottom"><span class="hi-chg neu">—</span></div></div>
+  <div class="hi neu"><div class="hi-label">—</div><div class="hi-val">—</div><div class="hi-bottom"><span class="hi-chg neu">—</span></div></div>
+  <div class="hi neu"><div class="hi-label">—</div><div class="hi-val">—</div><div class="hi-bottom"><span class="hi-chg neu">—</span></div></div>
+  <div class="hi neu"><div class="hi-label">—</div><div class="hi-val">—</div><div class="hi-bottom"><span class="hi-chg neu">—</span></div></div>
+  <div class="hi neu"><div class="hi-label">—</div><div class="hi-val">—</div><div class="hi-bottom"><span class="hi-chg neu">—</span></div></div>
+</div>
 
-  <!-- Divisas -->
-  <div class="card" id="c-divisas">
-    <div class="card-hd">
-      <span class="card-title">Tipo de Cambio</span>
-      <span class="card-src" data-tooltip="Actualiza cada 60s">Maxicambios</span>
-    </div>
-    <div class="card-body" id="rates-list">
-      <div class="sk"></div><div class="sk"></div><div class="sk"></div><div class="sk"></div>
-    </div>
-  </div>
+<!-- ── MAIN ── -->
+<div class="main">
 
-  <!-- Cripto -->
-  <div class="card" id="c-cripto">
-    <div class="card-hd">
-      <span class="card-title">Criptomonedas</span>
-      <span class="card-src" data-tooltip="Actualiza cada 30s">CoinGecko</span>
-    </div>
-    <div class="card-body" id="crypto-list">
-      <div class="sk"></div><div class="sk"></div><div class="sk"></div>
-    </div>
-  </div>
-
-  <!-- Tasas USA -->
-  <div class="card" id="c-tasas">
-    <div class="card-hd">
-      <span class="card-title">Tasas USA</span>
-      <span class="card-src" data-tooltip="Actualiza cada 30s">NY Fed · Yahoo</span>
-    </div>
-    <div class="card-body" id="rates-us-list">
-      <div class="sk"></div><div class="sk"></div><div class="sk"></div><div class="sk"></div><div class="sk"></div>
-    </div>
-  </div>
-
-  <!-- Resumen + Noticias -->
-  <div class="card card--tall" id="c-noticias">
-
-    <div class="card-half">
-      <div class="card-hd">
-        <span class="card-title"><span id="hd-greeting"></span></span>
-        <div id="weather-widget" class="weather-widget"></div>
-        <button class="btn-regen" id="summary-btn" onclick="refreshSummary()" title="Regenerar">↻</button>
+  <!-- Col 1: Tipo de Cambio + Cripto -->
+  <div class="col">
+    <div class="section">
+      <div class="sec-hd">
+        <div class="sec-dot" style="background:var(--cyan)"></div>
+        <div class="sec-title">Tipo de Cambio</div>
+        <span class="sec-cd" id="cd-rates">—</span>
+        <div class="sec-src">Yahoo Finance · cambio mensual</div>
       </div>
-      <div class="summary-box">
-        <ul id="summary-text"><li>Cargando resumen...</li></ul>
-        <span id="summary-date" class="summary-date"></span>
-      </div>
-    </div>
-
-    <div class="card-divider"></div>
-
-    <div class="card-half">
-      <div class="card-hd card-hd--inner">
-        <span class="card-title"><span class="live-dot"></span>Ciclo de Noticias en Vivo</span>
-        <span class="card-src" data-tooltip="Actualiza cada 3 min">Política · Economía · Finanzas</span>
-      </div>
-      <div class="news-filter" id="news-filter"></div>
-      <div class="news-feed" id="news-feed">
+      <div class="sec-body" id="rates-list">
         <div class="sk"></div><div class="sk"></div><div class="sk"></div><div class="sk"></div>
       </div>
     </div>
-
-  </div>
-
-  <!-- Macro Paraguay -->
-  <div class="card" id="c-macro">
-    <div class="card-hd">
-      <span class="card-title">Macro Paraguay</span>
-      <span class="card-src" data-tooltip="Actualiza cada 15 min">BCP · FMI · S&amp;P · Moody's</span>
-    </div>
-    <div class="card-body" id="economic-list">
-      <div class="sk"></div><div class="sk"></div><div class="sk"></div>
-    </div>
-  </div>
-
-  <!-- Commodities -->
-  <div class="card" id="c-commodities">
-    <div class="card-hd">
-      <span class="card-title">Commodities</span>
-      <span class="card-src" data-tooltip="Actualiza cada 60s">Yahoo Finance</span>
-    </div>
-    <div class="card-body" id="commodities-list">
-      <div class="sk"></div><div class="sk"></div><div class="sk"></div>
-      <div class="sk"></div><div class="sk"></div><div class="sk"></div><div class="sk"></div>
+    <div class="section">
+      <div class="sec-hd">
+        <div class="sec-dot" style="background:var(--amber)"></div>
+        <div class="sec-title">Criptomonedas</div>
+        <span class="sec-cd" id="cd-crypto">—</span>
+        <div class="sec-src">CoinGecko</div>
+      </div>
+      <div class="sec-body" id="crypto-list">
+        <div class="sk"></div><div class="sk"></div><div class="sk"></div>
+      </div>
     </div>
   </div>
 
-  <!-- Índices USA -->
-  <div class="card" id="c-indices">
-    <div class="card-hd">
-      <span class="card-title">Índices</span>
-      <span class="card-src" data-tooltip="Actualiza cada 30s">Yahoo Finance</span>
+  <!-- Col 2: Tasas USA + Macro -->
+  <div class="col">
+    <div class="section">
+      <div class="sec-hd">
+        <div class="sec-dot" style="background:#a78bfa"></div>
+        <div class="sec-title">Tasas USA</div>
+        <span class="sec-cd" id="cd-rates-us">—</span>
+        <div class="sec-src">NY Fed · Yahoo</div>
+      </div>
+      <div class="sec-body" id="rates-us-list">
+        <div class="sk"></div><div class="sk"></div><div class="sk"></div><div class="sk"></div><div class="sk"></div>
+      </div>
     </div>
-    <div class="card-body" id="indexes-list">
-      <div class="sk"></div><div class="sk"></div><div class="sk"></div><div class="sk"></div>
+    <div class="section">
+      <div class="sec-hd">
+        <div class="sec-dot" style="background:#f87171"></div>
+        <div class="sec-title">Macro Paraguay</div>
+        <span class="sec-cd" id="cd-macro">—</span>
+        <div class="sec-src">BCP · FMI · S&amp;P · Moody's</div>
+      </div>
+      <div class="sec-body" id="economic-list">
+        <div class="sk"></div><div class="sk"></div><div class="sk"></div><div class="sk"></div><div class="sk"></div>
+      </div>
     </div>
   </div>
 
-</div><!-- /grid -->
+  <!-- Col 3: Índices + Commodities -->
+  <div class="col">
+    <div class="section">
+      <div class="sec-hd">
+        <div class="sec-dot" style="background:var(--pos)"></div>
+        <div class="sec-title">Índices USA</div>
+        <span class="sec-cd" id="cd-indexes">—</span>
+        <div class="sec-src">Yahoo Finance</div>
+      </div>
+      <div class="sec-body" id="indexes-list">
+        <div class="sk"></div><div class="sk"></div><div class="sk"></div><div class="sk"></div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="sec-hd">
+        <div class="sec-dot" style="background:#fb923c"></div>
+        <div class="sec-title">Commodities</div>
+        <span class="sec-cd" id="cd-commodities">—</span>
+        <div class="sec-src">Yahoo Finance</div>
+      </div>
+      <div class="sec-body" id="commodities-list">
+        <div class="sk"></div><div class="sk"></div><div class="sk"></div>
+        <div class="sk"></div><div class="sk"></div><div class="sk"></div><div class="sk"></div>
+      </div>
+    </div>
+  </div>
 
-<!-- ── MARKET STATUS BAR ── -->
+  <!-- Col 4: Noticias -->
+  <div class="right-col">
+    <div class="news-top">
+      <div class="live-dot"></div>
+      <div class="sec-title">Ciclo de Noticias en Vivo</div>
+      <span class="sec-cd" id="cd-news">—</span>
+      <div class="sec-src">Política · Economía · Finanzas</div>
+    </div>
+    <div class="news-filters" id="news-filter"></div>
+    <div class="news-list" id="news-feed">
+      <div class="sk" style="flex:unset;height:64px"></div>
+      <div class="sk" style="flex:unset;height:64px"></div>
+      <div class="sk" style="flex:unset;height:64px"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── MARKET BAR ── -->
 <div class="mkt-bar" id="mkt-bar"></div>
+
+</div>
 
 <script src="/static/js/dashboard.js"></script>
 </body>
