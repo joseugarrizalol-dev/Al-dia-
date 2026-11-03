@@ -49,6 +49,30 @@ def _resolve_youtube(slug, info):
     }
 
 
+def debug_fetch(slug: str) -> dict:
+    """Diagnóstico temporal: qué le responde YouTube al servidor para un canal."""
+    info = CHANNELS.get(slug)
+    if not info:
+        return {"error": f"canal desconocido: {slug}"}
+    try:
+        r = requests.get(
+            f"https://www.youtube.com/channel/{info['channel_id']}/live",
+            headers=_HEADERS, cookies=_COOKIES, timeout=10,
+        )
+        match = _CANONICAL_RE.search(r.text)
+        return {
+            "status_code":    r.status_code,
+            "final_url":      r.url,
+            "html_length":    len(r.text),
+            "has_canonical":  bool(match),
+            "video_id":       match.group(1) if match else None,
+            "mentions_consent": "consent" in r.text.lower(),
+            "snippet_head":   r.text[:800],
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+
 def get_live_feeds() -> dict:
     cached = _cache.get("live_feeds")
     if cached is not None:

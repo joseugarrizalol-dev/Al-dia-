@@ -4,7 +4,7 @@ from scrapers.crypto import get_crypto
 from scrapers.news import get_news
 from scrapers.economic import get_economic
 from scrapers.markets import get_commodities, get_us_markets
-from scrapers.live_feeds import get_live_feeds
+from scrapers.live_feeds import get_live_feeds, debug_fetch
 
 app = Flask(__name__)
 
@@ -20,6 +20,10 @@ def en_vivo():
 @app.route("/api/live_feeds")
 def api_live_feeds():
     return jsonify(get_live_feeds())
+
+@app.route("/api/debug_live/<slug>")
+def api_debug_live(slug):
+    return jsonify(debug_fetch(slug))
 
 @app.route("/api/rates")
 def api_rates():
