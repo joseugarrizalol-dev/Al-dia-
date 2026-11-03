@@ -16,14 +16,21 @@ CHANNELS = {
 #  puede matchear cualquiera de las decenas de IDs de videos recomendados/
 #  relacionados que trae la página — eso rompía la resolución en producción.
 _CANONICAL_RE = re.compile(r'<link rel="canonical" href="https://www\.youtube\.com/watch\?v=([a-zA-Z0-9_-]{11})"')
-_HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+_HEADERS = {
+    "User-Agent":      "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+    "Accept-Language": "es-PY,es;q=0.9,en;q=0.8",
+}
+# Sin esta cookie, YouTube le sirve a IPs de datacenter (como las de Render)
+# una interstitial de consentimiento de cookies en vez de la página real,
+# que no trae el <link rel="canonical"> con el video en vivo.
+_COOKIES = {"CONSENT": "YES+cb.20240101-00-p0.es+FX+100"}
 
 
 def _resolve_youtube(slug, info):
     try:
         r = requests.get(
             f"https://www.youtube.com/channel/{info['channel_id']}/live",
-            headers=_HEADERS, timeout=6,
+            headers=_HEADERS, cookies=_COOKIES, timeout=6,
         )
         match = _CANONICAL_RE.search(r.text)
         video_id = match.group(1) if match else None
