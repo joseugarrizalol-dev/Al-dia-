@@ -18,21 +18,43 @@ const X_ACCOUNTS = [
   "nanduti",
 ];
 
+function _xFallbackCard(handle) {
+  return `
+    <div class="live-offline" style="position:static;min-height:120px">
+      <span>No se pudo cargar el timeline de @${handle} (suele ser un bloqueador de rastreo/anuncios en el navegador).</span>
+      <a href="https://twitter.com/${handle}" target="_blank" rel="noopener">Ver @${handle} en X →</a>
+    </div>`;
+}
+
 function _renderXPanel() {
   const panel = document.getElementById("x-panel");
   panel.innerHTML = X_ACCOUNTS.map((handle) => `
-    <a class="twitter-timeline" data-theme="dark" data-height="320" data-chrome="noheader nofooter noborders transparent"
-       href="https://twitter.com/${handle}?ref_src=twsrc%5Etfw">Tweets de @${handle}</a>
+    <div class="x-item" id="x-item-${handle}">
+      <a class="twitter-timeline" data-theme="dark" data-height="320" data-chrome="noheader nofooter noborders transparent"
+         href="https://twitter.com/${handle}?ref_src=twsrc%5Etfw">Tweets de @${handle}</a>
+    </div>
   `).join("");
   _loadXWidgets();
+  // Si a los ~5s algún item no se convirtió a iframe (widgets.js bloqueado
+  // por un ad/tracker blocker, muy común), se cambia por una tarjeta con
+  // link directo en vez de dejar el texto del link pelado.
+  setTimeout(() => {
+    X_ACCOUNTS.forEach((handle) => {
+      const item = document.getElementById(`x-item-${handle}`);
+      if (item && !item.querySelector("iframe")) {
+        item.innerHTML = _xFallbackCard(handle);
+      }
+    });
+  }, 5000);
 }
 
 function _loadXWidgets(attempt) {
   attempt = attempt || 0;
   if (window.twttr && window.twttr.widgets) {
     window.twttr.widgets.load(document.getElementById("x-panel"));
-  } else if (attempt < 20) {
-    // widgets.js se carga async — reintenta hasta ~6s mientras termina de llegar.
+  } else if (attempt < 10) {
+    // widgets.js se carga async — reintenta hasta ~3s mientras termina de llegar
+    // (si nunca aparece, el chequeo de abajo igual cae al fallback a los 5s).
     setTimeout(() => _loadXWidgets(attempt + 1), 300);
   }
 }
