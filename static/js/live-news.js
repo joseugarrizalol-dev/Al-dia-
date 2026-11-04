@@ -53,7 +53,7 @@ function startNewsScroll(){
   _newsPaused=false;
   _newsTimer=setInterval(()=>{
     if(_newsPaused||!feed)return;
-    _scrollAcc+=0.45;
+    _scrollAcc+=0.2;
     const step=Math.floor(_scrollAcc);
     if(step>0){
       feed.scrollTop+=step;
