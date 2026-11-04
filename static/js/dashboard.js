@@ -304,7 +304,8 @@ async function loadCommodities(){
 }
 
 // ── News ──────────────────────────────────────────────────────
-let allNews=[],activeFilter='Todos',_newsPaused=false,_newsTimer=null,_scrollAcc=0,_newsListenersAdded=false;
+let allNews=[],activeFilter='Todos',_newsPaused=false,_newsRaf=null,_newsOffset=0,_newsLastTs=null,_newsListenersAdded=false;
+const NEWS_SPEED_PX_S=28.125; // antes: 0.45px/16ms (equivalente), ahora en px/segundo reales
 
 function buildFilters(){
   const outlets=['Todos',...new Set(allNews.filter(n=>!n.agro).map(n=>n.outlet))];
@@ -320,32 +321,48 @@ function renderNews(items){
       <span class="no ${outletCls(n.outlet)}">${n.outlet}</span>
       <a class="nt" href="${n.url}" target="_blank" rel="noopener">${n.title}</a>
     </div>`).join('');
-  document.getElementById('news-feed').innerHTML=html+html;
+  document.getElementById('news-track').innerHTML=html+html;
+}
+
+// Mueve `#news-track` con transform (sub-píxel, vía GPU) en vez de
+// scrollTop (que el navegador redondea a enteros y se ve "a saltos" a
+// velocidades bajas). requestAnimationFrame + delta de tiempo real en
+// vez de un setInterval de paso fijo, para que sea fluido de verdad.
+function _newsTick(ts){
+  const track=document.getElementById('news-track');
+  if(track && _newsLastTs!=null && !_newsPaused){
+    const dt=ts-_newsLastTs;
+    const half=track.scrollHeight/2;
+    _newsOffset+=NEWS_SPEED_PX_S*dt/1000;
+    if(half>0)_newsOffset%=half;
+    track.style.transform=`translateY(${-_newsOffset}px)`;
+  }
+  _newsLastTs=ts;
+  _newsRaf=requestAnimationFrame(_newsTick);
 }
 
 function startNewsScroll(){
   const feed=document.getElementById('news-feed');
-  if(!feed)return;
-  if(_newsTimer)clearInterval(_newsTimer);
-  feed.scrollTop=0;
-  _scrollAcc=0;
+  const track=document.getElementById('news-track');
+  if(!feed||!track)return;
+  if(_newsRaf)cancelAnimationFrame(_newsRaf);
+  _newsOffset=0;
+  _newsLastTs=null;
   _newsPaused=false;
-  _newsTimer=setInterval(()=>{
-    if(_newsPaused||!feed)return;
-    _scrollAcc+=0.45;
-    const step=Math.floor(_scrollAcc);
-    if(step>0){
-      feed.scrollTop+=step;
-      _scrollAcc-=step;
-      if(feed.scrollTop>=feed.scrollHeight/2)feed.scrollTop-=feed.scrollHeight/2;
-    }
-  },16);
+  track.style.transform='translateY(0)';
+  _newsRaf=requestAnimationFrame(_newsTick);
 
   if(!_newsListenersAdded){
     _newsListenersAdded=true;
     feed.addEventListener('mouseenter',()=>{_newsPaused=true;});
     feed.addEventListener('mouseleave',()=>{_newsPaused=false;});
-    feed.addEventListener('wheel',e=>{e.preventDefault();feed.scrollTop+=e.deltaY*.7;},{passive:false});
+    feed.addEventListener('wheel',e=>{
+      e.preventDefault();
+      const half=track.scrollHeight/2;
+      _newsOffset+=e.deltaY*.7;
+      if(half>0){_newsOffset%=half;if(_newsOffset<0)_newsOffset+=half;}
+      track.style.transform=`translateY(${-_newsOffset}px)`;
+    },{passive:false});
   }
 }
 
@@ -363,7 +380,7 @@ async function loadNews(){
     renderNews(allNews);
     startNewsScroll();
     _resetCd('cd-news');
-  }catch{document.getElementById('news-feed').innerHTML='<div class="ni"><span class="nt">Error al cargar noticias</span></div>';}
+  }catch{document.getElementById('news-track').innerHTML='<div class="ni"><span class="nt">Error al cargar noticias</span></div>';}
 }
 
 // ── Clock ─────────────────────────────────────────────────────

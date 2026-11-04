@@ -1,3 +1,11 @@
+try:
+    # Cargar .env en local antes de importar scrapers (live_feeds lee
+    # YOUTUBE_API_KEY al importarse). En producción las variables reales ganan.
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 from flask import Flask, render_template, jsonify
 from scrapers.bcp import get_rates
 from scrapers.crypto import get_crypto
