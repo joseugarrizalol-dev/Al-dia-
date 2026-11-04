@@ -30,22 +30,36 @@ function _renderXPanel() {
   const panel = document.getElementById("x-panel");
   panel.innerHTML = X_ACCOUNTS.map((handle) => `
     <div class="x-item" id="x-item-${handle}">
-      <a class="twitter-timeline" data-theme="dark" data-height="320" data-chrome="noheader nofooter noborders transparent"
+      <div class="live-loading" style="position:static;min-height:60px">Cargando @${handle}…</div>
+      <a class="twitter-timeline" style="display:none" data-theme="dark" data-height="320" data-chrome="noheader nofooter noborders transparent"
          href="https://twitter.com/${handle}?ref_src=twsrc%5Etfw">Tweets de @${handle}</a>
     </div>
   `).join("");
   _loadXWidgets();
-  // Si a los ~5s algún item no se convirtió a iframe (widgets.js bloqueado
-  // por un ad/tracker blocker, muy común), se cambia por una tarjeta con
-  // link directo en vez de dejar el texto del link pelado.
-  setTimeout(() => {
+
+  // Mientras widgets.js convierte cada link en un iframe, se revisa cada
+  // 500ms y se saca el "Cargando…" de cada cuenta apenas esté lista. Si a
+  // los ~5s alguna sigue sin convertirse (ad/tracker blocker, muy común:
+  // platform.twitter.com/widgets.js está en casi todas las listas), se
+  // cambia por una tarjeta con link directo en vez de dejar el texto crudo.
+  let elapsed = 0;
+  const poll = setInterval(() => {
+    elapsed += 500;
+    let pending = false;
     X_ACCOUNTS.forEach((handle) => {
       const item = document.getElementById(`x-item-${handle}`);
-      if (item && !item.querySelector("iframe")) {
+      if (!item) return;
+      if (item.querySelector("iframe")) {
+        const loading = item.querySelector(".live-loading");
+        if (loading) loading.remove();
+      } else if (elapsed >= 5000) {
         item.innerHTML = _xFallbackCard(handle);
+      } else {
+        pending = true;
       }
     });
-  }, 5000);
+    if (!pending || elapsed >= 5000) clearInterval(poll);
+  }, 500);
 }
 
 function _loadXWidgets(attempt) {
