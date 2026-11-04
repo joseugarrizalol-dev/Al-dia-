@@ -12,8 +12,8 @@ from scrapers.crypto import get_crypto
 from scrapers.news import get_news
 from scrapers.economic import get_economic
 from scrapers.markets import get_commodities, get_us_markets
-import os
 from scrapers.live_feeds import get_live_feeds
+from scrapers.x_feed import get_x_feed
 
 app = Flask(__name__)
 
@@ -30,14 +30,9 @@ def en_vivo():
 def api_live_feeds():
     return jsonify(get_live_feeds())
 
-@app.route("/api/debug_env")
-def api_debug_env():
-    key = os.environ.get("YOUTUBE_API_KEY")
-    return jsonify({
-        "has_key":   bool(key),
-        "key_length": len(key) if key else 0,
-        "key_prefix": key[:6] if key else None,
-    })
+@app.route("/api/x_feed")
+def api_x_feed():
+    return jsonify(get_x_feed())
 
 @app.route("/api/rates")
 def api_rates():

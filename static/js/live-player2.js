@@ -7,69 +7,65 @@ let _loadedEmbed2 = null;
 let _live2Initialized = false;
 let _xInitialized = false;
 
-// Cuentas oficiales embebidas vía widgets.js (gratis, sin API key).
-const X_ACCOUNTS = [
-  "IPParaguay",
-  "MEF_Paraguay",
-  "BCP_PY",
-  "DMH_paraguay",
-  "ABCDigital",
-  "UltimaHoracom",
-  "nanduti",
-];
+// El servidor trae los tweets (1 por cuenta, cacheado 25 min) — el
+// navegador del visitante nunca le pide nada a X directamente, así que
+// no hay bloqueador de rastreo/anuncios que pueda frenarlo.
+function _xInitials(label) {
+  return label.split(" ").filter(Boolean).slice(0, 2).map(w => w[0]).join("").toUpperCase();
+}
 
-function _xFallbackCard(handle) {
+function _xTimeAgo(iso) {
+  if (!iso) return "";
+  const diffMin = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 60000));
+  if (diffMin < 1) return "ahora";
+  if (diffMin < 60) return `${diffMin}m`;
+  const diffH = Math.floor(diffMin / 60);
+  if (diffH < 24) return `${diffH}h`;
+  return `${Math.floor(diffH / 24)}d`;
+}
+
+function _xCard(item) {
+  if (!item.tweet) {
+    return `
+      <div class="x-card">
+        <div class="x-head">
+          <div class="x-avatar">${_xInitials(item.label)}</div>
+          <div class="x-who">
+            <div class="x-name">${item.label}</div>
+            <div class="x-handle">@${item.handle}</div>
+          </div>
+        </div>
+        <div class="x-body x-body-empty">Sin datos disponibles en este momento.</div>
+        <a class="x-link" href="${item.url}" target="_blank" rel="noopener">Ver @${item.handle} en X →</a>
+      </div>`;
+  }
   return `
-    <div class="live-offline" style="position:static;min-height:120px">
-      <span>No se pudo cargar el timeline de @${handle} (suele ser un bloqueador de rastreo/anuncios en el navegador).</span>
-      <a href="https://twitter.com/${handle}" target="_blank" rel="noopener">Ver @${handle} en X →</a>
+    <div class="x-card">
+      <div class="x-head">
+        <div class="x-avatar">${_xInitials(item.label)}</div>
+        <div class="x-who">
+          <div class="x-name">${item.label}</div>
+          <div class="x-handle">@${item.handle}</div>
+        </div>
+        <span class="x-time">${_xTimeAgo(item.tweet.created_at)}</span>
+      </div>
+      <div class="x-body">${item.tweet.text}</div>
+      <a class="x-link" href="${item.url}" target="_blank" rel="noopener">Ver en X →</a>
     </div>`;
 }
 
-function _renderXPanel() {
+async function _renderXPanel() {
   const panel = document.getElementById("x-panel");
-  panel.innerHTML = X_ACCOUNTS.map((handle) => `
-    <div class="x-item" id="x-item-${handle}">
-      <div class="live-loading" style="position:static;min-height:60px">Cargando @${handle}…</div>
-      <a class="twitter-timeline" style="display:none" data-theme="dark" data-height="320" data-chrome="noheader nofooter noborders transparent"
-         href="https://twitter.com/${handle}?ref_src=twsrc%5Etfw">Tweets de @${handle}</a>
-    </div>
-  `).join("");
-  _loadXWidgets();
-
-  // Mientras widgets.js convierte cada link en un iframe, se revisa cada
-  // 500ms y se saca el "Cargando…" de cada cuenta apenas esté lista. Si a
-  // los ~5s alguna sigue sin convertirse (ad/tracker blocker, muy común:
-  // platform.twitter.com/widgets.js está en casi todas las listas), se
-  // cambia por una tarjeta con link directo en vez de dejar el texto crudo.
-  let elapsed = 0;
-  const poll = setInterval(() => {
-    elapsed += 500;
-    let pending = false;
-    X_ACCOUNTS.forEach((handle) => {
-      const item = document.getElementById(`x-item-${handle}`);
-      if (!item) return;
-      if (item.querySelector("iframe")) {
-        const loading = item.querySelector(".live-loading");
-        if (loading) loading.remove();
-      } else if (elapsed >= 5000) {
-        item.innerHTML = _xFallbackCard(handle);
-      } else {
-        pending = true;
-      }
-    });
-    if (!pending || elapsed >= 5000) clearInterval(poll);
-  }, 500);
-}
-
-function _loadXWidgets(attempt) {
-  attempt = attempt || 0;
-  if (window.twttr && window.twttr.widgets) {
-    window.twttr.widgets.load(document.getElementById("x-panel"));
-  } else if (attempt < 10) {
-    // widgets.js se carga async — reintenta hasta ~3s mientras termina de llegar
-    // (si nunca aparece, el chequeo de abajo igual cae al fallback a los 5s).
-    setTimeout(() => _loadXWidgets(attempt + 1), 300);
+  if (!panel.dataset.loaded) panel.innerHTML = `<div class="live-loading" style="position:static;min-height:120px">Cargando…</div>`;
+  try {
+    const res = await fetch("/api/x_feed");
+    const feed = await res.json();
+    panel.innerHTML = Object.values(feed).map(_xCard).join("");
+    panel.dataset.loaded = "1";
+  } catch (e) {
+    if (!panel.dataset.loaded) {
+      panel.innerHTML = `<div class="x-empty">No se pudo cargar X en este momento.</div>`;
+    }
   }
 }
 
@@ -151,6 +147,7 @@ function setRightMode(mode) {
   } else if (mode === "x" && !_xInitialized) {
     _xInitialized = true;
     _renderXPanel();
+    setInterval(_renderXPanel, 25 * 60 * 1000);
   }
 }
 
