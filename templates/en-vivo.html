@@ -72,6 +72,7 @@
       <select id="right-mode-select" class="right-mode-select" onchange="setRightMode(this.value)">
         <option value="live" selected>Transmisión en vivo</option>
         <option value="prices">Precios</option>
+        <option value="x">X</option>
       </select>
       <select id="live2-channel-select" class="right-mode-select" style="margin-left:auto" onchange="selectChannel2(this.value)"></select>
     </div>
@@ -115,11 +116,14 @@
     <div id="live2-panel" class="live-player-frame">
       <div class="live-loading">Cargando…</div>
     </div>
+
+    <div id="x-panel" class="x-panel" style="display:none"></div>
   </div>
 
 </div>
 
 </div>
+<script src="https://platform.twitter.com/widgets.js" async></script>
 <script src="/static/js/live.js"></script>
 <script src="/static/js/live-news.js"></script>
 <script src="/static/js/live-markets.js"></script>

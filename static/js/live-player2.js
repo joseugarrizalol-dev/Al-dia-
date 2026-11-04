@@ -1,10 +1,41 @@
-// ── Columna derecha: modo Precios ↔ 2do reproductor en vivo ──
+// ── Columna derecha: Precios ↔ 2do reproductor en vivo ↔ X ──
 // Reutiliza CHANNEL_LABELS y _liveSrc() ya definidos en live.js.
 
 let _feeds2 = {};
 let _activeSlug2 = Object.keys(CHANNEL_LABELS)[1] || Object.keys(CHANNEL_LABELS)[0];
 let _loadedEmbed2 = null;
 let _live2Initialized = false;
+let _xInitialized = false;
+
+// Cuentas oficiales embebidas vía widgets.js (gratis, sin API key).
+const X_ACCOUNTS = [
+  "IPParaguay",
+  "MEF_Paraguay",
+  "BCP_PY",
+  "DMH_paraguay",
+  "ABCDigital",
+  "UltimaHoracom",
+  "nanduti",
+];
+
+function _renderXPanel() {
+  const panel = document.getElementById("x-panel");
+  panel.innerHTML = X_ACCOUNTS.map((handle) => `
+    <a class="twitter-timeline" data-theme="dark" data-height="320" data-chrome="noheader nofooter noborders transparent"
+       href="https://twitter.com/${handle}?ref_src=twsrc%5Etfw">Tweets de @${handle}</a>
+  `).join("");
+  _loadXWidgets();
+}
+
+function _loadXWidgets(attempt) {
+  attempt = attempt || 0;
+  if (window.twttr && window.twttr.widgets) {
+    window.twttr.widgets.load(document.getElementById("x-panel"));
+  } else if (attempt < 20) {
+    // widgets.js se carga async — reintenta hasta ~6s mientras termina de llegar.
+    setTimeout(() => _loadXWidgets(attempt + 1), 300);
+  }
+}
 
 function _renderChannelSelect2() {
   const sel = document.getElementById("live2-channel-select");
@@ -63,14 +94,17 @@ async function loadLiveFeeds2() {
 function setRightMode(mode) {
   const pricesEl = document.getElementById("markets-panel");
   const liveEl = document.getElementById("live2-panel");
+  const xEl = document.getElementById("x-panel");
   const channelSel = document.getElementById("live2-channel-select");
 
   // El atributo hidden pierde contra `.markets-panel{display:flex}` (misma
   // especificidad, definida después) — se fuerza con style.display directo.
+  pricesEl.style.display = mode === "prices" ? "flex" : "none";
+  liveEl.style.display = mode === "live" ? "block" : "none";
+  xEl.style.display = mode === "x" ? "flex" : "none";
+  channelSel.hidden = mode !== "live";
+
   if (mode === "live") {
-    pricesEl.style.display = "none";
-    liveEl.style.display = "block";
-    channelSel.hidden = false;
     if (!_live2Initialized) {
       _live2Initialized = true;
       loadLiveFeeds2();
@@ -78,10 +112,9 @@ function setRightMode(mode) {
     } else {
       _renderPlayer2();
     }
-  } else {
-    pricesEl.style.display = "flex";
-    liveEl.style.display = "none";
-    channelSel.hidden = true;
+  } else if (mode === "x" && !_xInitialized) {
+    _xInitialized = true;
+    _renderXPanel();
   }
 }
 
