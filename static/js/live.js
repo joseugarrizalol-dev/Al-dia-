@@ -3,6 +3,7 @@ const CHANNEL_LABELS = {
   monumental: "Radio Monumental",
   nanduti: "Ñandutí",
   rockandpop: "Rock & Pop",
+  senadotv: "SenadoTV",
 };
 
 let _feeds = {};

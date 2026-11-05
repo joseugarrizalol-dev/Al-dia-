@@ -8,15 +8,16 @@ CHANNELS = {
     "monumental": {"name": "Radio Monumental", "source": "AM 1080",   "channel_id": "UCApQkTY6oHoGjZr6jfMajwQ"},
     "nanduti":    {"name": "Ñandutí",          "source": "AM 1020",   "channel_id": "UC3MzWfxWB6ImezkL5_DSd4A"},
     "rockandpop": {"name": "Rock & Pop",       "source": "FM 95.5",   "channel_id": "UCFii8hQ3sYpusp-8r_DmGeg"},
+    "senadotv":   {"name": "SenadoTV",         "source": "Congreso",  "channel_id": "UCMXLvWR4z1Z4P4JvubxMQtg"},
 }
 
 _YOUTUBE_API_KEY = os.environ.get("YOUTUBE_API_KEY")
 _SEARCH_URL = "https://www.googleapis.com/youtube/v3/search"
 
 # search.list con eventType=live cuesta 100 unidades de cuota por llamada.
-# Con 4 canales y la cuota gratis (10,000/día), el techo real son ~24
-# refrescos/día → se cachea 1 hora para no pasarnos.
-_CACHE_TTL = 3600
+# Con 5 canales y la cuota gratis (10,000/día), el techo real son ~20
+# refrescos/día → se cachea 75 min para no pasarnos.
+_CACHE_TTL = 75 * 60
 
 
 def _resolve_youtube(slug, info):
