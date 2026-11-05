@@ -1,6 +1,7 @@
 import json
 import re
 import requests
+from datetime import datetime, timezone
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from scrapers import _cache
 
@@ -21,6 +22,17 @@ _NEXT_DATA_RE = re.compile(r'<script id="__NEXT_DATA__"[^>]*>(.*?)</script>', re
 _CACHE_TTL = 25 * 60
 
 
+_EPOCH = datetime(1970, 1, 1, tzinfo=timezone.utc)
+
+
+def _parse_date(created_at):
+    try:
+        # Formato de X: "Wed Oct 10 20:19:24 +0000 2018"
+        return datetime.strptime(created_at, "%a %b %d %H:%M:%S %z %Y")
+    except Exception:
+        return _EPOCH
+
+
 def _parse_tweet(html: str):
     match = _NEXT_DATA_RE.search(html)
     if not match:
@@ -28,19 +40,29 @@ def _parse_tweet(html: str):
     try:
         data = json.loads(match.group(1))
         entries = data["props"]["pageProps"]["timeline"]["entries"]
-        for entry in entries:
-            tweet = entry.get("content", {}).get("tweet")
-            if tweet:
-                text = tweet.get("full_text") or tweet.get("text")
-                if text:
-                    return {
-                        "text":       text,
-                        "created_at": tweet.get("created_at"),
-                        "id":         tweet.get("id_str"),
-                    }
     except Exception:
         return None
-    return None
+
+    # El primer entry suele ser el tweet fijado (pinned), que puede tener
+    # años — se recorren todos y se queda con el más reciente de verdad.
+    best = None
+    best_date = _EPOCH
+    for entry in entries:
+        tweet = entry.get("content", {}).get("tweet")
+        if not tweet:
+            continue
+        text = tweet.get("full_text") or tweet.get("text")
+        if not text:
+            continue
+        date = _parse_date(tweet.get("created_at"))
+        if date >= best_date:
+            best_date = date
+            best = {
+                "text":       text,
+                "created_at": tweet.get("created_at"),
+                "id":         tweet.get("id_str"),
+            }
+    return best
 
 
 def _fetch_account(slug, info):
