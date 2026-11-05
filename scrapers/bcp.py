@@ -31,16 +31,16 @@ def _pct(current, past):
 
 def _fetch_direct(code, ticker_sym):
     try:
-        hist = yf.Ticker(ticker_sym).history(period="1mo")
+        hist = yf.Ticker(ticker_sym).history(period="5d")
         if hist.empty:
             return code, None
         current = float(hist["Close"].iloc[-1])
-        month_ago = float(hist["Close"].iloc[0])
+        prev_day = float(hist["Close"].iloc[-2]) if len(hist) > 1 else current
         spread = current * 0.005
         return code, {
             "buy":    round(current - spread, 2),
             "sell":   round(current, 2),
-            "change": _pct(current, month_ago),
+            "change": _pct(current, prev_day),
         }
     except Exception:
         return code, None
@@ -48,16 +48,19 @@ def _fetch_direct(code, ticker_sym):
 
 def _fetch_cross(code, cross_sym, usd_pyg_hist):
     try:
-        cross_hist = yf.Ticker(cross_sym).history(period="1mo")
+        cross_hist = yf.Ticker(cross_sym).history(period="5d")
         if cross_hist.empty or usd_pyg_hist.empty:
             return code, None
         current = float(usd_pyg_hist["Close"].iloc[-1]) / float(cross_hist["Close"].iloc[-1])
-        month_ago = float(usd_pyg_hist["Close"].iloc[0]) / float(cross_hist["Close"].iloc[0])
+        if len(usd_pyg_hist) > 1 and len(cross_hist) > 1:
+            prev_day = float(usd_pyg_hist["Close"].iloc[-2]) / float(cross_hist["Close"].iloc[-2])
+        else:
+            prev_day = current
         spread = current * 0.005
         return code, {
             "buy":    round(current - spread, 2),
             "sell":   round(current, 2),
-            "change": _pct(current, month_ago),
+            "change": _pct(current, prev_day),
         }
     except Exception:
         return code, None
@@ -71,7 +74,7 @@ def get_rates() -> dict:
     rates = {}
 
     try:
-        usd_hist = yf.Ticker("USDPYG=X").history(period="1mo")
+        usd_hist = yf.Ticker("USDPYG=X").history(period="5d")
 
         tasks = {}
         with ThreadPoolExecutor(max_workers=6) as ex:
