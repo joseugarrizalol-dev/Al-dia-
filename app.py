@@ -13,7 +13,7 @@ from scrapers.news import get_news
 from scrapers.economic import get_economic
 from scrapers.markets import get_commodities, get_us_markets
 from scrapers.live_feeds import get_live_feeds
-from scrapers.x_feed import get_x_feed
+from scrapers.x_feed import get_x_feed, debug_fetch as debug_x_fetch
 
 app = Flask(__name__)
 
@@ -33,6 +33,10 @@ def api_live_feeds():
 @app.route("/api/x_feed")
 def api_x_feed():
     return jsonify(get_x_feed())
+
+@app.route("/api/debug_x/<slug>")
+def api_debug_x(slug):
+    return jsonify(debug_x_fetch(slug))
 
 @app.route("/api/rates")
 def api_rates():

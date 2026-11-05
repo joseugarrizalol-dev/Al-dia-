@@ -87,6 +87,30 @@ def _fetch_account(slug, info):
     }
 
 
+def debug_fetch(slug: str) -> dict:
+    """Diagnóstico temporal: qué le responde el endpoint de X al servidor."""
+    info = ACCOUNTS.get(slug)
+    if not info:
+        return {"error": f"cuenta desconocida: {slug}"}
+    handle = info["handle"]
+    try:
+        r = requests.get(
+            f"https://syndication.twitter.com/srv/timeline-profile/screen-name/{handle}",
+            params={"dnt": "false", "showReplies": "false", "lang": "es"},
+            headers=_HEADERS, timeout=10,
+        )
+        match = _NEXT_DATA_RE.search(r.text)
+        return {
+            "status_code":   r.status_code,
+            "html_length":   len(r.text),
+            "has_next_data": bool(match),
+            "parsed_tweet":  _parse_tweet(r.text) if r.ok else None,
+            "snippet":       r.text[:300],
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+
 def get_x_feed() -> dict:
     cached = _cache.get("x_feed")
     if cached is not None:
