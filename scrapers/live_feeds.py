@@ -9,15 +9,16 @@ CHANNELS = {
     "nanduti":    {"name": "Ñandutí",          "source": "AM 1020",   "channel_id": "UC3MzWfxWB6ImezkL5_DSd4A"},
     "rockandpop": {"name": "Rock & Pop",       "source": "FM 95.5",   "channel_id": "UCFii8hQ3sYpusp-8r_DmGeg"},
     "senadotv":   {"name": "SenadoTV",         "source": "Congreso",  "channel_id": "UCMXLvWR4z1Z4P4JvubxMQtg"},
+    "npy":        {"name": "NPY",              "source": "NPYoficial","channel_id": "UCXm5UbX1eXIFmFE0lz1etiA"},
 }
 
 _YOUTUBE_API_KEY = os.environ.get("YOUTUBE_API_KEY")
 _SEARCH_URL = "https://www.googleapis.com/youtube/v3/search"
 
 # search.list con eventType=live cuesta 100 unidades de cuota por llamada.
-# Con 5 canales y la cuota gratis (10,000/día), el techo real son ~20
-# refrescos/día → se cachea 75 min para no pasarnos.
-_CACHE_TTL = 75 * 60
+# Con 6 canales y la cuota gratis (10,000/día), el techo real son ~16
+# refrescos/día → se cachea 90 min para no pasarnos.
+_CACHE_TTL = 90 * 60
 
 
 def _resolve_youtube(slug, info):
@@ -56,7 +57,7 @@ def get_live_feeds() -> dict:
         return cached
 
     feeds = {}
-    with ThreadPoolExecutor(max_workers=4) as ex:
+    with ThreadPoolExecutor(max_workers=6) as ex:
         tasks = [ex.submit(_resolve_youtube, slug, info) for slug, info in CHANNELS.items()]
         for f in as_completed(tasks):
             slug, result = f.result()

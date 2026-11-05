@@ -4,6 +4,7 @@ const CHANNEL_LABELS = {
   nanduti: "Ñandutí",
   rockandpop: "Rock & Pop",
   senadotv: "SenadoTV",
+  npy: "NPY",
 };
 
 let _feeds = {};
